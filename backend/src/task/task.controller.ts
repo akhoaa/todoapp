@@ -1,0 +1,57 @@
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, Query } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { TaskService } from './task.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+
+@ApiTags('tasks')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('tasks')
+export class TaskController {
+  constructor(private readonly taskService: TaskService) { }
+
+  @ApiOperation({ summary: 'Get all tasks (user or admin)' })
+  @ApiResponse({ status: 200, description: 'List all tasks.' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'], description: 'Filter by task status' })
+  @Roles('user', 'admin')
+  @Get()
+  findAll(@Req() req, @Query('status') status?: string) {
+    const userId = req.user.userId;
+    return this.taskService.findAll(userId, status);
+  }
+
+  @ApiOperation({ summary: 'Get a task by id (user or admin)' })
+  @ApiResponse({ status: 200, description: 'Task detail.' })
+  @Roles('user', 'admin')
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.taskService.findOne(Number(id));
+  }
+
+  @ApiOperation({ summary: 'Create a new task (user or admin)' })
+  @ApiResponse({ status: 201, description: 'Task created.' })
+  @Roles('user', 'admin')
+  @Post()
+  create(@Body() dto: CreateTaskDto, @Req() req) {
+    const userId = req.user.userId;
+    return this.taskService.create(userId, dto);
+  }
+
+  @ApiOperation({ summary: 'Update a task (admin only)' })
+  @ApiResponse({ status: 200, description: 'Task updated.' })
+  @Roles('user', 'admin')
+  async update(@Param('id') id: string, @Body() dto: UpdateTaskDto, @Req() req) {
+    return this.taskService.updateWithOwnershipCheck(Number(id), dto, req.user);
+  }
+
+  @ApiOperation({ summary: 'Delete a task (admin only)' })
+  @ApiResponse({ status: 200, description: 'Task deleted.' })
+  @Roles('user', 'admin')
+  async delete(@Param('id') id: string, @Req() req) {
+    return this.taskService.deleteWithOwnershipCheck(Number(id), req.user);
+  }
+}
