@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -7,6 +7,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/user.decorator';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -35,24 +36,24 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Current user profile.' })
   @Roles('user', 'admin')
   @Get('profile')
-  getProfile(@Req() req) {
-    return this.usersService.findOne(req.user.userId);
+  getProfile(@CurrentUser('userId') userId: number) {
+    return this.usersService.findOne(userId);
   }
 
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated.' })
   @Roles('user', 'admin')
   @Put('profile')
-  updateProfile(@Req() req, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(req.user.userId, dto);
+  updateProfile(@CurrentUser('userId') userId: number, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(userId, dto);
   }
 
   @ApiOperation({ summary: 'Change password' })
   @ApiResponse({ status: 200, description: 'Password changed successfully.' })
   @Roles('user', 'admin')
   @Put('change-password')
-  changePassword(@Req() req, @Body() dto: ChangePasswordDto) {
-    return this.usersService.changePassword(req.user.userId, dto);
+  changePassword(@CurrentUser('userId') userId: number, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(userId, dto);
   }
 
   @ApiOperation({ summary: 'Get user by id (admin only)' })

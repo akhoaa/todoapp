@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -6,11 +6,12 @@ import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/user.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 201, description: 'Login successful, returns JWT.' })
@@ -31,8 +32,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Current user info.' })
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Req() req) {
-    return req.user;
+  getProfile(@CurrentUser() user: any) {
+    return user;
   }
 
   @ApiBearerAuth()
@@ -40,7 +41,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Logout successful.' })
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  logout(@Req() req) {
+  logout(@CurrentUser() user: any) {
     return { message: 'Logout successful (client hãy xoá token ở phía client).' };
   }
 
