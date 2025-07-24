@@ -9,18 +9,18 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  name     String?
-  email    String  @unique
-  password String
-  avatar   String?   
-  tasks    Task[]
-  roles    String   @default("user") // Thêm trường roles
+  id            Int            @id @default(autoincrement())
+  name          String?
+  email         String         @unique
+  password      String
+  avatar        String?
+  tasks         Task[]
+  roles         String         @default("user") // Thêm trường roles
   refreshTokens RefreshToken[] // Quan hệ 1-n với RefreshToken
 }
 
@@ -42,4 +42,3 @@ model Task {
   userId      Int
   createdAt   DateTime @default(now())
 }
-

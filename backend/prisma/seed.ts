@@ -49,7 +49,6 @@ async function main() {
         userId: user.id,
       },
     ],
-    skipDuplicates: true,
   });
 
   console.log('✅ Seed data created successfully!');

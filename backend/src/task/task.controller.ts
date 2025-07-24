@@ -15,13 +15,13 @@ import { CurrentUser } from '../common/decorators/user.decorator';
 export class TaskController {
   constructor(private readonly taskService: TaskService) { }
 
-  @ApiOperation({ summary: 'Get all tasks (user or admin)' })
-  @ApiResponse({ status: 200, description: 'List all tasks.' })
+  @ApiOperation({ summary: 'Get all tasks (admin sees all, users see own)' })
+  @ApiResponse({ status: 200, description: 'List all tasks based on user role.' })
   @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'], description: 'Filter by task status' })
   @Roles('user', 'admin')
   @Get()
-  findAll(@CurrentUser('userId') userId: number, @Query('status') status?: string) {
-    return this.taskService.findAll(userId, status);
+  findAll(@CurrentUser() user: any, @Query('status') status?: string) {
+    return this.taskService.findAll(user, status);
   }
 
   @ApiOperation({ summary: 'Get a task by id (user or admin)' })
@@ -40,16 +40,18 @@ export class TaskController {
     return this.taskService.create(userId, dto);
   }
 
-  @ApiOperation({ summary: 'Update a task (admin only)' })
+  @ApiOperation({ summary: 'Update a task (user or admin)' })
   @ApiResponse({ status: 200, description: 'Task updated.' })
   @Roles('user', 'admin')
+  @Put(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateTaskDto, @CurrentUser() user: any) {
     return this.taskService.updateWithOwnershipCheck(Number(id), dto, user);
   }
 
-  @ApiOperation({ summary: 'Delete a task (admin only)' })
+  @ApiOperation({ summary: 'Delete a task (user or admin)' })
   @ApiResponse({ status: 200, description: 'Task deleted.' })
   @Roles('user', 'admin')
+  @Delete(':id')
   async delete(@Param('id') id: string, @CurrentUser() user: any) {
     return this.taskService.deleteWithOwnershipCheck(Number(id), user);
   }

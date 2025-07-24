@@ -27,18 +27,33 @@ export class TaskService {
     });
   }
 
-  async findAll(userId: number, status?: string) {
-    if (!userId) {
-      throw new BadRequestException('User ID is required');
+  async findAll(user: any, status?: string) {
+    if (!user || !user.userId) {
+      throw new BadRequestException('User information is required');
     }
 
-    const where: any = { userId };
+    const where: any = {};
+
+    // Admin users can see all tasks, regular users only see their own
+    if (user.roles !== 'admin') {
+      where.userId = user.userId;
+    }
+
     if (status) {
       where.status = status;
     }
 
     return this.prisma.task.findMany({
       where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
