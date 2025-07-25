@@ -1,10 +1,11 @@
 import React from 'react';
-import { Layout, Menu, Button, Dropdown, Avatar, Space, message } from 'antd';
+import { Layout, Menu, Button, Dropdown, Avatar, Space } from 'antd';
 import { UserOutlined, LogoutOutlined, SettingOutlined, HomeOutlined, CheckSquareOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { setLogoutAction } from '@/redux/slice/accountSlice';
 import { callLogout } from '@/config/api';
+import { useMessage } from '@/hooks/useMessage';
 
 const { Header, Content, Sider } = Layout;
 
@@ -13,6 +14,7 @@ const AppLayout: React.FC = () => {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const user = useAppSelector(state => state.account.user);
+  const message = useMessage();
 
   const handleLogout = async () => {
     try {
@@ -70,10 +72,10 @@ const AppLayout: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider width={200} theme="dark">
-        <div style={{ 
-          height: 64, 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
           color: 'white',
           fontSize: '18px',
@@ -89,11 +91,11 @@ const AppLayout: React.FC = () => {
         />
       </Sider>
       <Layout>
-        <Header style={{ 
-          padding: '0 24px', 
-          background: '#fff', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <Header style={{
+          padding: '0 24px',
+          background: '#fff',
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
@@ -109,9 +111,9 @@ const AppLayout: React.FC = () => {
             </Button>
           </Dropdown>
         </Header>
-        <Content style={{ 
-          margin: '24px', 
-          padding: '24px', 
+        <Content style={{
+          margin: '24px',
+          padding: '24px',
           background: '#fff',
           borderRadius: '8px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'

@@ -17,8 +17,9 @@ describe('TaskController', () => {
           useValue: {
             create: jest.fn(),
             findAll: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
+            findOne: jest.fn(),
+            updateWithOwnershipCheck: jest.fn(),
+            deleteWithOwnershipCheck: jest.fn(),
           },
         },
       ],
@@ -50,10 +51,10 @@ describe('TaskController', () => {
       };
 
       jest.spyOn(service, 'create').mockResolvedValue(mockTask);
-      const mockReq = { user: { userId: 1 } };
-      const result = await controller.create(createTaskDto, mockReq);
+      const userId = 1;
+      const result = await controller.create(createTaskDto, userId);
       expect(result).toEqual(mockTask);
-      expect(service.create).toHaveBeenCalledWith(1, createTaskDto);
+      expect(service.create).toHaveBeenCalledWith(userId, createTaskDto);
     });
   });
 
@@ -67,6 +68,12 @@ describe('TaskController', () => {
           status: 'PENDING',
           userId: 1,
           createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+          },
         },
         {
           id: 2,
@@ -75,14 +82,20 @@ describe('TaskController', () => {
           status: 'COMPLETED',
           userId: 1,
           createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+          },
         },
       ];
 
       jest.spyOn(service, 'findAll').mockResolvedValue(mockTasks);
-      const mockReq = { user: { userId: 1 } };
-      const result = await controller.findAll(mockReq);
+      const mockUser = { userId: 1, roles: 'user' };
+      const result = await controller.findAll(mockUser);
       expect(result).toEqual(mockTasks);
-      expect(service.findAll).toHaveBeenCalledWith(1);
+      expect(service.findAll).toHaveBeenCalledWith(mockUser, undefined);
     });
   });
 
@@ -101,13 +114,15 @@ describe('TaskController', () => {
         status: updateTaskDto.status || 'PENDING',
         userId: 1,
         createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      jest.spyOn(service, 'update').mockResolvedValue(mockTask);
+      jest.spyOn(service, 'updateWithOwnershipCheck').mockResolvedValue(mockTask);
+      const mockUser = { userId: 1, roles: 'user' };
 
-      const result = await controller.update(taskId.toString(), updateTaskDto);
+      const result = await controller.update(taskId, updateTaskDto, mockUser);
       expect(result).toEqual(mockTask);
-      expect(service.update).toHaveBeenCalledWith(taskId, updateTaskDto);
+      expect(service.updateWithOwnershipCheck).toHaveBeenCalledWith(taskId, updateTaskDto, mockUser);
     });
   });
 
@@ -121,13 +136,15 @@ describe('TaskController', () => {
         status: 'PENDING',
         userId: 1,
         createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      jest.spyOn(service, 'delete').mockResolvedValue(mockTask);
+      jest.spyOn(service, 'deleteWithOwnershipCheck').mockResolvedValue(mockTask);
+      const mockUser = { userId: 1, roles: 'user' };
 
-      const result = await controller.delete(taskId.toString());
+      const result = await controller.delete(taskId, mockUser);
       expect(result).toEqual(mockTask);
-      expect(service.delete).toHaveBeenCalledWith(taskId);
+      expect(service.deleteWithOwnershipCheck).toHaveBeenCalledWith(taskId, mockUser);
     });
   });
 }); 

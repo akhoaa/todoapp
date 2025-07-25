@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -58,10 +58,11 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Get user by id (admin only)' })
   @ApiResponse({ status: 200, description: 'User detail.' })
+  @ApiParam({ name: 'id', description: 'User ID', type: 'number' })
   @Roles('admin')
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(Number(id));
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.findOne(id);
   }
 
   @ApiOperation({ summary: 'Create a new user (anyone)' })
@@ -73,17 +74,19 @@ export class UsersController {
 
   @ApiOperation({ summary: 'Update a user (admin only)' })
   @ApiResponse({ status: 200, description: 'User updated.' })
+  @ApiParam({ name: 'id', description: 'User ID', type: 'number' })
   @Roles('admin')
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(Number(id), dto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(id, dto);
   }
 
   @ApiOperation({ summary: 'Delete a user (admin only)' })
   @ApiResponse({ status: 200, description: 'User deleted.' })
+  @ApiParam({ name: 'id', description: 'User ID', type: 'number' })
   @Roles('admin')
   @Delete(':id')
-  delete(@Param('id') id: string) {
-    return this.usersService.delete(Number(id));
+  delete(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.delete(id);
   }
 } 

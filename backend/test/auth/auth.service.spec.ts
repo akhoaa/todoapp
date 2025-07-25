@@ -3,12 +3,14 @@ import { AuthService } from '../../src/auth/auth.service';
 import { UsersService } from '../../src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { ConfigService } from '../../src/config/config.service';
 import * as bcrypt from 'bcryptjs';
 
 describe('AuthService', () => {
   let service: AuthService;
   let usersService: UsersService;
   let jwtService: JwtService;
+  let configService: ConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,12 +34,34 @@ describe('AuthService', () => {
           provide: PrismaService,
           useValue: {},
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            jwt: {
+              secret: 'test-secret',
+              expiresIn: '1h',
+              refreshSecret: 'test-refresh-secret',
+              refreshExpiresIn: '7d',
+            },
+            isDevelopment: true,
+            nodeEnv: 'test',
+            port: 3000,
+            database: {
+              url: 'test-database-url',
+            },
+            api: {
+              prefix: 'api',
+              version: '1.0',
+            },
+          },
+        },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     usersService = module.get<UsersService>(UsersService);
     jwtService = module.get<JwtService>(JwtService);
+    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
@@ -130,27 +154,57 @@ describe('AuthService', () => {
       const registerDto = {
         email: 'new@example.com',
         password: 'password123',
+        name: 'New User',
       };
 
       const mockUser = {
         id: 2,
         email: registerDto.email,
-        name: null,
-        password: 'hashed-password',
+        name: registerDto.name,
         avatar: null,
         roles: 'user',
       };
 
+      const mockAccessToken = 'access-token';
+      const mockRefreshToken = 'refresh-token';
+
       jest.spyOn(usersService, 'findByEmail').mockResolvedValue(null);
       jest.spyOn(bcrypt, 'hash').mockImplementation(() => Promise.resolve('hashed-password'));
       jest.spyOn(usersService, 'create').mockResolvedValue(mockUser);
+      jest.spyOn(jwtService, 'sign')
+        .mockReturnValueOnce(mockAccessToken)
+        .mockReturnValueOnce(mockRefreshToken);
 
       const result = await service.register(registerDto);
       expect(result).toEqual(expect.objectContaining({
+        access_token: mockAccessToken,
+        refresh_token: mockRefreshToken,
         user: expect.objectContaining({
+          id: 2,
           email: 'new@example.com',
+          name: 'New User',
         }),
       }));
+    });
+
+    it('should throw BadRequestException when email already exists', async () => {
+      const registerDto = {
+        email: 'existing@example.com',
+        password: 'password123',
+      };
+
+      const existingUser = {
+        id: 1,
+        email: registerDto.email,
+        password: 'hashed-password',
+        name: 'Existing User',
+        avatar: null,
+        roles: 'user',
+      };
+
+      jest.spyOn(usersService, 'findByEmail').mockResolvedValue(existingUser);
+
+      await expect(service.register(registerDto)).rejects.toThrow('Email already exists');
     });
   });
 }); 

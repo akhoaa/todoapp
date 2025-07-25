@@ -6,7 +6,7 @@ import { AuthService } from '../auth.service';
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
-    // Nếu dùng email thay vì username, truyền { usernameField: 'email' }
+    // Configure to use email field instead of username
     super({ usernameField: 'email' });
   }
 

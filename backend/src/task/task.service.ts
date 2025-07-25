@@ -1,71 +1,80 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
+import { CreateTaskDto, UpdateTaskDto } from './dto';
 
 @Injectable()
 export class TaskService {
   constructor(private prisma: PrismaService) { }
 
   async create(userId: number, dto: CreateTaskDto) {
-    if (!userId) {
-      throw new BadRequestException('User ID is required');
+    try {
+      // Check if user exists
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new BadRequestException('User does not exist');
+      }
+
+      return await this.prisma.task.create({
+        data: {
+          ...dto,
+          userId,
+        },
+      });
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('Error creating task');
     }
-    if (!dto.title) {
-      throw new BadRequestException('Title is required');
-    }
-    // Kiểm tra userId có tồn tại không
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new BadRequestException('User does not exist');
-    }
-    return this.prisma.task.create({
-      data: {
-        ...dto,
-        userId,
-      },
-    });
   }
 
   async findAll(user: any, status?: string) {
-    if (!user || !user.userId) {
-      throw new BadRequestException('User information is required');
-    }
+    try {
+      if (!user || !user.userId) {
+        throw new BadRequestException('User information is required');
+      }
 
-    const where: any = {};
+      const where: any = {};
 
-    // Admin users can see all tasks, regular users only see their own
-    if (user.roles !== 'admin') {
-      where.userId = user.userId;
-    }
+      // Admin users can see all tasks, regular users only see their own
+      if (user.roles !== 'admin') {
+        where.userId = user.userId;
+      }
 
-    if (status) {
-      where.status = status;
-    }
+      if (status) {
+        where.status = status;
+      }
 
-    return this.prisma.task.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+      return await this.prisma.task.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('Error fetching tasks');
+    }
   }
 
   async findOne(id: number) {
-    const task = await this.prisma.task.findUnique({
-      where: { id },
-    });
-    if (!task) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
+    try {
+      const task = await this.prisma.task.findUnique({
+        where: { id },
+      });
+      if (!task) {
+        throw new NotFoundException(`Task with ID ${id} not found`);
+      }
+      return task;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Error finding task');
     }
-    return task;
   }
 
   async update(id: number, dto: UpdateTaskDto) {
@@ -80,12 +89,17 @@ export class TaskService {
   }
 
   async updateWithOwnershipCheck(id: number, dto: UpdateTaskDto, user: any) {
-    const task = await this.prisma.task.findUnique({ where: { id } });
-    if (!task) throw new NotFoundException('Task not found');
-    if (user.roles !== 'admin' && task.userId !== user.userId) {
-      throw new ForbiddenException('You can only update your own tasks');
+    try {
+      const task = await this.prisma.task.findUnique({ where: { id } });
+      if (!task) throw new NotFoundException('Task not found');
+      if (user.roles !== 'admin' && task.userId !== user.userId) {
+        throw new ForbiddenException('You can only update your own tasks');
+      }
+      return await this.prisma.task.update({ where: { id }, data: dto });
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) throw error;
+      throw new InternalServerErrorException('Error updating task');
     }
-    return this.prisma.task.update({ where: { id }, data: dto });
   }
 
   async delete(id: number) {
@@ -95,16 +109,21 @@ export class TaskService {
       if (error.code === 'P2025') {
         throw new NotFoundException(`Task with ID ${id} not found`);
       }
-      throw error;
+      throw new InternalServerErrorException('Error deleting task');
     }
   }
 
   async deleteWithOwnershipCheck(id: number, user: any) {
-    const task = await this.prisma.task.findUnique({ where: { id } });
-    if (!task) throw new NotFoundException('Task not found');
-    if (user.roles !== 'admin' && task.userId !== user.userId) {
-      throw new ForbiddenException('You can only delete your own tasks');
+    try {
+      const task = await this.prisma.task.findUnique({ where: { id } });
+      if (!task) throw new NotFoundException('Task not found');
+      if (user.roles !== 'admin' && task.userId !== user.userId) {
+        throw new ForbiddenException('You can only delete your own tasks');
+      }
+      return await this.prisma.task.delete({ where: { id } });
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) throw error;
+      throw new InternalServerErrorException('Error deleting task');
     }
-    return this.prisma.task.delete({ where: { id } });
   }
 }

@@ -71,7 +71,7 @@ describe('TaskService', () => {
 
   describe('findAll', () => {
     it('should return all tasks for a user', async () => {
-      const userId = 1;
+      const mockUser = { userId: 1, roles: 'user' };
       const mockTasks = [
         {
           id: 1,
@@ -80,6 +80,12 @@ describe('TaskService', () => {
           status: 'PENDING',
           userId: 1,
           createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+          },
         },
         {
           id: 2,
@@ -88,16 +94,138 @@ describe('TaskService', () => {
           status: 'COMPLETED',
           userId: 1,
           createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+          },
         },
       ];
 
       jest.spyOn(prisma.task, 'findMany').mockResolvedValue(mockTasks);
 
-      const result = await service.findAll(userId);
+      const result = await service.findAll(mockUser);
       expect(result).toEqual(mockTasks);
       expect(prisma.task.findMany).toHaveBeenCalledWith({
-        where: { userId },
+        where: { userId: mockUser.userId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
+    });
+
+    it('should return all tasks for admin user', async () => {
+      const mockAdminUser = { userId: 1, roles: 'admin' };
+      const mockTasks = [
+        {
+          id: 1,
+          title: 'Task 1',
+          description: 'Description 1',
+          status: 'PENDING',
+          userId: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+          },
+        },
+        {
+          id: 2,
+          title: 'Task 2',
+          description: 'Description 2',
+          status: 'COMPLETED',
+          userId: 2,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            id: 2,
+            name: 'Another User',
+            email: 'another@example.com',
+          },
+        },
+      ];
+
+      jest.spyOn(prisma.task, 'findMany').mockResolvedValue(mockTasks);
+
+      const result = await service.findAll(mockAdminUser);
+      expect(result).toEqual(mockTasks);
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: {},
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    });
+
+    it('should filter tasks by status', async () => {
+      const mockUser = { userId: 1, roles: 'user' };
+      const status = 'COMPLETED';
+      const mockTasks = [
+        {
+          id: 2,
+          title: 'Task 2',
+          description: 'Description 2',
+          status: 'COMPLETED',
+          userId: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+          },
+        },
+      ];
+
+      jest.spyOn(prisma.task, 'findMany').mockResolvedValue(mockTasks);
+
+      const result = await service.findAll(mockUser, status);
+      expect(result).toEqual(mockTasks);
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: { userId: mockUser.userId, status },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    });
+
+    it('should throw BadRequestException when user is not provided', async () => {
+      await expect(service.findAll(null)).rejects.toThrow('User information is required');
+    });
+
+    it('should throw BadRequestException when user.userId is not provided', async () => {
+      const invalidUser = { roles: 'user' };
+      await expect(service.findAll(invalidUser)).rejects.toThrow('User information is required');
     });
   });
 

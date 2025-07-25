@@ -15,7 +15,13 @@ describe('UsersController', () => {
           provide: UsersService,
           useValue: {
             create: jest.fn(),
+            findAll: jest.fn(),
+            findOne: jest.fn(),
             findByEmail: jest.fn(),
+            update: jest.fn(),
+            changePassword: jest.fn(),
+            remove: jest.fn(),
+            getStatistics: jest.fn(),
           },
         },
       ],
@@ -54,16 +60,49 @@ describe('UsersController', () => {
   });
 
   describe('findAll', () => {
-    it('should return an empty array', async () => {
+    it('should return all users', async () => {
+      const mockUsers = [
+        {
+          id: 1,
+          email: 'user1@example.com',
+          name: 'User 1',
+          avatar: null,
+          roles: 'user',
+        },
+        {
+          id: 2,
+          email: 'user2@example.com',
+          name: 'User 2',
+          avatar: null,
+          roles: 'admin',
+        },
+      ];
+
+      jest.spyOn(service, 'findAll').mockResolvedValue(mockUsers);
+
       const result = await controller.findAll();
-      expect(result).toEqual([]);
+      expect(result).toEqual(mockUsers);
+      expect(service.findAll).toHaveBeenCalled();
     });
   });
 
   describe('findOne', () => {
-    it('should return an empty object', async () => {
-      const result = await controller.findOne('1');
-      expect(result).toEqual({});
+    it('should return a user by id', async () => {
+      const userId = 1;
+      const mockUser = {
+        id: userId,
+        email: 'test@example.com',
+        name: 'Test User',
+        avatar: null,
+        roles: 'user',
+        tasks: [],
+      };
+
+      jest.spyOn(service, 'findOne').mockResolvedValue(mockUser);
+
+      const result = await controller.findOne(userId);
+      expect(result).toEqual(mockUser);
+      expect(service.findOne).toHaveBeenCalledWith(userId);
     });
   });
 }); 

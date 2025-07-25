@@ -24,7 +24,7 @@ export const callRegister = (data: IRegisterRequest) => {
 }
 
 export const callFetchAccount = () => {
-  return axios.get<IGetAccount>('/auth/profile');
+  return axios.get<IGetAccount>('/users/profile');
 }
 
 export const callRefreshToken = (refreshToken: string) => {
@@ -59,7 +59,7 @@ export const callGetTasks = (status?: string) => {
 }
 
 export const callGetTaskById = (id: number) => {
-  return axios.get<IBackendRes<ITask>>(`/tasks/${id}`);
+  return axios.get<ITask>(`/tasks/${id}`);
 }
 
 export const callCreateTask = (data: ICreateTask) => {
@@ -71,5 +71,5 @@ export const callUpdateTask = (id: number, data: IUpdateTask) => {
 }
 
 export const callDeleteTask = (id: number) => {
-  return axios.delete<IBackendRes<string>>(`/tasks/${id}`);
+  return axios.delete(`/tasks/${id}`);
 }

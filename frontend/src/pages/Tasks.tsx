@@ -9,7 +9,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Popconfirm,
   Typography,
   Row,
@@ -28,6 +27,7 @@ import { fetchTasks, addTask, updateTask, removeTask } from '@/redux/slice/taskS
 import { callCreateTask, callUpdateTask, callDeleteTask } from '@/config/api';
 import type { ITask, ICreateTask, IUpdateTask } from '@/types/backend';
 import dayjs from 'dayjs';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -36,6 +36,14 @@ const Tasks: React.FC = () => {
   const [form] = Form.useForm();
   const dispatch = useAppDispatch();
   const { tasks, isLoading } = useAppSelector(state => state.task);
+  const {
+    handleApiResponse,
+    showErrorMessage,
+    showSuccessMessage,
+    showSuccessNotification
+  } = useErrorHandler({
+    showDetails: import.meta.env.DEV
+  });
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<ITask | null>(null);
@@ -63,13 +71,18 @@ const Tasks: React.FC = () => {
   };
 
   const handleDeleteTask = async (taskId: number) => {
-    try {
-      await callDeleteTask(taskId);
-      dispatch(removeTask(taskId));
-      message.success('Task deleted successfully');
-    } catch (error: any) {
-      message.error(error?.message || 'Failed to delete task');
-    }
+    await handleApiResponse(
+      () => callDeleteTask(taskId),
+      {
+        successMessage: 'Task deleted successfully',
+        onSuccess: () => {
+          dispatch(removeTask(taskId));
+        },
+        onError: (error) => {
+          console.error('Delete task error:', error);
+        }
+      }
+    );
   };
 
   const handleModalOk = async () => {
@@ -80,25 +93,50 @@ const Tasks: React.FC = () => {
       if (editingTask) {
         // Update existing task
         const updateData: IUpdateTask = values;
-        const res = await callUpdateTask(editingTask.id, updateData);
-        if (res && res.data) {
-          dispatch(updateTask(res.data));
-          message.success('Task updated successfully');
-        }
+        await handleApiResponse(
+          () => callUpdateTask(editingTask.id, updateData),
+          {
+            successTitle: 'Task Updated',
+            successDescription: `"${values.title}" has been updated successfully.`,
+            errorOptions: {
+              useNotification: true, // Show detailed validation errors
+              showDetails: import.meta.env.DEV
+            },
+            onSuccess: (res) => {
+              if (res && res.data) {
+                dispatch(updateTask(res.data));
+                setIsModalVisible(false);
+                form.resetFields();
+                setEditingTask(null);
+              }
+            }
+          }
+        );
       } else {
         // Create new task
         const createData: ICreateTask = values;
-        const res = await callCreateTask(createData);
-        if (res && res.data) {
-          dispatch(addTask(res.data));
-          message.success('Task created successfully');
-        }
+        await handleApiResponse(
+          () => callCreateTask(createData),
+          {
+            successTitle: 'Task Created',
+            successDescription: `"${values.title}" has been created successfully.`,
+            errorOptions: {
+              useNotification: true, // Show detailed validation errors
+              showDetails: import.meta.env.DEV
+            },
+            onSuccess: (res) => {
+              if (res && res.data) {
+                dispatch(addTask(res.data));
+                setIsModalVisible(false);
+                form.resetFields();
+              }
+            }
+          }
+        );
       }
-
-      setIsModalVisible(false);
-      form.resetFields();
     } catch (error: any) {
-      message.error(error?.message || 'Operation failed');
+      // Form validation errors
+      showErrorMessage(error, 'Please check the form fields');
     } finally {
       setIsSubmitting(false);
     }

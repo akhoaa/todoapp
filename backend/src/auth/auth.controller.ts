@@ -1,10 +1,17 @@
 import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
+import {
+  RegisterDto,
+  LoginDto,
+  ForgotPasswordDto,
+  RefreshTokenDto,
+  AuthResponseDto,
+  RefreshResponseDto,
+  ForgotPasswordResponseDto,
+  LogoutResponseDto,
+  UserResponseDto
+} from './dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/user.decorator';
 
@@ -14,22 +21,22 @@ export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
   @ApiOperation({ summary: 'User login' })
-  @ApiResponse({ status: 201, description: 'Login successful, returns JWT.' })
+  @ApiResponse({ status: 201, description: 'Login successful, returns JWT.', type: AuthResponseDto })
   @Post('login')
-  login(@Body() body: LoginDto) {
+  login(@Body() body: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(body.email, body.password);
   }
 
   @ApiOperation({ summary: 'User register' })
-  @ApiResponse({ status: 201, description: 'Register successful, returns user.' })
+  @ApiResponse({ status: 201, description: 'Register successful, returns user.', type: AuthResponseDto })
   @Post('register')
-  register(@Body() dto: RegisterDto) {
+  register(@Body() dto: RegisterDto): Promise<AuthResponseDto> {
     return this.authService.register(dto);
   }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Current user info.' })
+  @ApiResponse({ status: 200, description: 'Current user info.', type: UserResponseDto })
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   getProfile(@CurrentUser() user: any) {
@@ -38,24 +45,24 @@ export class AuthController {
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout user' })
-  @ApiResponse({ status: 200, description: 'Logout successful.' })
+  @ApiResponse({ status: 200, description: 'Logout successful.', type: LogoutResponseDto })
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  logout(@CurrentUser() user: any) {
-    return { message: 'Logout successful (client hãy xoá token ở phía client).' };
+  logout(@CurrentUser() user: any): LogoutResponseDto {
+    return { message: 'Logout successful. Please remove the token from client storage.' };
   }
 
   @ApiOperation({ summary: 'Forgot password' })
-  @ApiResponse({ status: 200, description: 'If email exists, send reset link.' })
+  @ApiResponse({ status: 200, description: 'If email exists, send reset link.', type: ForgotPasswordResponseDto })
   @Post('forgot-password')
-  forgotPassword(@Body() body: ForgotPasswordDto) {
+  forgotPassword(@Body() body: ForgotPasswordDto): ForgotPasswordResponseDto {
     return this.authService.forgotPassword(body.email);
   }
 
   @ApiOperation({ summary: 'Refresh token' })
-  @ApiResponse({ status: 200, description: 'Return new access token if refresh token is valid.' })
+  @ApiResponse({ status: 200, description: 'Return new access token if refresh token is valid.', type: RefreshResponseDto })
   @Post('refresh')
-  refresh(@Body() body: RefreshTokenDto) {
+  refresh(@Body() body: RefreshTokenDto): RefreshResponseDto {
     return this.authService.refreshToken(body.refreshToken);
   }
 }

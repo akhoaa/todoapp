@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Input, Card, Typography, Divider, message, Row, Col } from 'antd';
+import { Button, Form, Input, Card, Typography, Divider, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { setUserLoginInfo } from '@/redux/slice/accountSlice';
 import { callRegister } from '@/config/api';
 import type { IRegisterRequest } from '@/types/backend';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { debugRegistrationPayload, debugErrorResponse, debugApiCall } from '@/utils/debugHelper';
 
 const { Title, Text } = Typography;
 
@@ -15,6 +17,15 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(state => state.account.isAuthenticated);
+  const {
+    handleApiResponse,
+    showErrorNotification,
+    showSuccessMessage,
+    getErrorDetails
+  } = useErrorHandler({
+    useNotification: true, // Use notifications for registration to show validation details
+    showDetails: import.meta.env.DEV
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -24,23 +35,52 @@ const Register: React.FC = () => {
 
   const onFinish = async (values: IRegisterRequest & { confirmPassword: string }) => {
     setIsSubmit(true);
-    try {
-      const { confirmPassword, ...registerData } = values;
-      const res = await callRegister(registerData);
-      if (res && res.data && res.data.access_token) {
-        localStorage.setItem('access_token', res.data.access_token);
-        localStorage.setItem('refresh_token', res.data.refresh_token);
-        dispatch(setUserLoginInfo(res.data.user));
-        message.success('Registration successful!');
-        navigate('/dashboard');
-      } else {
-        message.error('Registration failed');
-      }
-    } catch (error: any) {
-      message.error(error?.message || 'Registration failed');
-    } finally {
-      setIsSubmit(false);
+
+    const { confirmPassword, ...registerData } = values;
+
+    // Debug logging for development
+    if (import.meta.env.DEV) {
+      await debugApiCall('/auth/register', 'POST', registerData);
+      debugRegistrationPayload(registerData);
     }
+
+    // Use the enhanced error handler with automatic success/error display
+    const result = await handleApiResponse(
+      () => callRegister(registerData),
+      {
+        successTitle: 'Registration Successful!',
+        successDescription: 'Welcome! You have been automatically logged in.',
+        errorOptions: {
+          useNotification: true, // Show detailed validation errors in notifications
+          showDetails: import.meta.env.DEV
+        },
+        onSuccess: (res) => {
+          if (res && res.data && res.data.access_token) {
+            localStorage.setItem('access_token', res.data.access_token);
+            localStorage.setItem('refresh_token', res.data.refresh_token);
+            dispatch(setUserLoginInfo(res.data.user));
+            navigate('/dashboard');
+          } else {
+            showErrorNotification(new Error('Registration response missing required data'));
+          }
+        },
+        onError: (error) => {
+          // Additional debug logging for development
+          if (import.meta.env.DEV) {
+            debugErrorResponse(error);
+            const errorDetails = getErrorDetails(error);
+            console.group('🔍 Registration Error Analysis');
+            console.log('Error Type:', errorDetails.type);
+            console.log('Status Code:', errorDetails.statusCode);
+            console.log('Message:', errorDetails.message);
+            console.log('Details:', errorDetails.details);
+            console.groupEnd();
+          }
+        }
+      }
+    );
+
+    setIsSubmit(false);
   };
 
   return (
@@ -84,6 +124,7 @@ const Register: React.FC = () => {
                 <Input
                   prefix={<UserOutlined />}
                   placeholder="Enter your full name"
+                  autoComplete="name"
                 />
               </Form.Item>
 
@@ -98,6 +139,8 @@ const Register: React.FC = () => {
                 <Input
                   prefix={<MailOutlined />}
                   placeholder="Enter your email"
+                  autoComplete="email"
+                  type="email"
                 />
               </Form.Item>
 
@@ -112,6 +155,7 @@ const Register: React.FC = () => {
                 <Input.Password
                   prefix={<LockOutlined />}
                   placeholder="Enter your password"
+                  autoComplete="new-password"
                 />
               </Form.Item>
 
@@ -134,6 +178,7 @@ const Register: React.FC = () => {
                 <Input.Password
                   prefix={<LockOutlined />}
                   placeholder="Confirm your password"
+                  autoComplete="new-password"
                 />
               </Form.Item>
 

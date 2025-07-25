@@ -1,0 +1,50 @@
+# Root level gitignore for Todo Application
+
+# Temporary files and folders
+temp-reference/
+Demo_Script.md
+PowerPoint_Outline.txt
+
+# Performance test files
+backend/performance-test*.js
+backend/memory-leak-test.js
+backend/connection-pool-test.js
+backend/stress-test.js
+backend/test-registration.js
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Input, Card, Typography, Divider, message, Row, Col } from 'antd';
+import { Button, Form, Input, Card, Typography, Divider, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { setUserLoginInfo } from '@/redux/slice/accountSlice';
 import { callLogin } from '@/config/api';
 import type { ILoginRequest } from '@/types/backend';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const { Title, Text } = Typography;
 
@@ -15,6 +16,13 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(state => state.account.isAuthenticated);
+  const {
+    handleApiResponse,
+    showErrorMessage,
+    getErrorDetails
+  } = useErrorHandler({
+    showDetails: import.meta.env.DEV
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -24,22 +32,40 @@ const Login: React.FC = () => {
 
   const onFinish = async (values: ILoginRequest) => {
     setIsSubmit(true);
-    try {
-      const res = await callLogin(values.email, values.password);
-      if (res && res.data && res.data.access_token) {
-        localStorage.setItem('access_token', res.data.access_token);
-        localStorage.setItem('refresh_token', res.data.refresh_token);
-        dispatch(setUserLoginInfo(res.data.user));
-        message.success('Login successful!');
-        navigate('/dashboard');
-      } else {
-        message.error('Login failed');
+
+    // Use the enhanced error handler with automatic success/error display
+    await handleApiResponse(
+      () => callLogin(values.email, values.password),
+      {
+        successMessage: 'Login successful! Welcome back.',
+        errorOptions: {
+          showDetails: import.meta.env.DEV
+        },
+        onSuccess: (res) => {
+          if (res && res.data && res.data.access_token) {
+            localStorage.setItem('access_token', res.data.access_token);
+            localStorage.setItem('refresh_token', res.data.refresh_token);
+            dispatch(setUserLoginInfo(res.data.user));
+            navigate('/dashboard');
+          } else {
+            showErrorMessage(new Error('Login response missing required data'));
+          }
+        },
+        onError: (error) => {
+          // Additional debug logging for development
+          if (import.meta.env.DEV) {
+            const errorDetails = getErrorDetails(error);
+            console.group('🔍 Login Error Analysis');
+            console.log('Error Type:', errorDetails.type);
+            console.log('Status Code:', errorDetails.statusCode);
+            console.log('Message:', errorDetails.message);
+            console.groupEnd();
+          }
+        }
       }
-    } catch (error: any) {
-      message.error(error?.message || 'Login failed');
-    } finally {
-      setIsSubmit(false);
-    }
+    );
+
+    setIsSubmit(false);
   };
 
   return (
@@ -86,6 +112,8 @@ const Login: React.FC = () => {
                 <Input
                   prefix={<UserOutlined />}
                   placeholder="Enter your email"
+                  autoComplete="email"
+                  type="email"
                 />
               </Form.Item>
 
@@ -97,6 +125,7 @@ const Login: React.FC = () => {
                 <Input.Password
                   prefix={<LockOutlined />}
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                 />
               </Form.Item>
 
