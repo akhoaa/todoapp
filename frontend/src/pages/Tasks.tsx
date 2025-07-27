@@ -23,7 +23,7 @@ import {
   SyncOutlined
 } from '@ant-design/icons';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
-import { fetchTasks, addTask, updateTask, removeTask } from '@/redux/slice/taskSlice';
+import { fetchTasks, addTaskToList, updateTaskInList, removeTaskFromList } from '@/redux/slice/taskSlice';
 import { callCreateTask, callUpdateTask, callDeleteTask } from '@/config/api';
 import type { ITask, ICreateTask, IUpdateTask } from '@/types/backend';
 import dayjs from 'dayjs';
@@ -38,9 +38,7 @@ const Tasks: React.FC = () => {
   const { tasks, isLoading } = useAppSelector(state => state.task);
   const {
     handleApiResponse,
-    showErrorMessage,
-    showSuccessMessage,
-    showSuccessNotification
+    showErrorMessage
   } = useErrorHandler({
     showDetails: import.meta.env.DEV
   });
@@ -76,7 +74,7 @@ const Tasks: React.FC = () => {
       {
         successMessage: 'Task deleted successfully',
         onSuccess: () => {
-          dispatch(removeTask(taskId));
+          dispatch(removeTaskFromList(taskId));
         },
         onError: (error) => {
           console.error('Delete task error:', error);
@@ -104,7 +102,7 @@ const Tasks: React.FC = () => {
             },
             onSuccess: (res) => {
               if (res && res.data) {
-                dispatch(updateTask(res.data));
+                dispatch(updateTaskInList(res.data));
                 setIsModalVisible(false);
                 form.resetFields();
                 setEditingTask(null);
@@ -126,7 +124,7 @@ const Tasks: React.FC = () => {
             },
             onSuccess: (res) => {
               if (res && res.data) {
-                dispatch(addTask(res.data));
+                dispatch(addTaskToList(res.data));
                 setIsModalVisible(false);
                 form.resetFields();
               }
@@ -136,7 +134,7 @@ const Tasks: React.FC = () => {
       }
     } catch (error: any) {
       // Form validation errors
-      showErrorMessage(error, 'Please check the form fields');
+      showErrorMessage(error);
     } finally {
       setIsSubmitting(false);
     }

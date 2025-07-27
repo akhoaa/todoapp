@@ -22,7 +22,12 @@ export const fetchAccount = createAsyncThunk(
   'account/fetchAccount',
   async () => {
     const response = await callFetchAccount();
-    return response;
+    // Extract only serializable data from the Axios response
+    return {
+      data: response.data,
+      status: response.status,
+      statusText: response.statusText
+    };
   }
 );
 
@@ -48,6 +53,12 @@ export const accountSlice = createSlice({
     },
     setLoadingFalse: (state) => {
       state.isLoading = false;
+    },
+    updateUserRoles: (state, action) => {
+      if (state.user) {
+        state.user.rbacRoles = action.payload.roles;
+        state.user.permissions = action.payload.permissions;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -78,7 +89,8 @@ export const {
   setUserLoginInfo,
   setLogoutAction,
   setRefreshTokenAction,
-  setLoadingFalse
+  setLoadingFalse,
+  updateUserRoles
 } = accountSlice.actions;
 
 export default accountSlice.reducer;

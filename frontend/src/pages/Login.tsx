@@ -3,7 +3,7 @@ import { Button, Form, Input, Card, Typography, Divider, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { setUserLoginInfo } from '@/redux/slice/accountSlice';
+import { setUserLoginInfo, fetchAccount } from '@/redux/slice/accountSlice';
 import { callLogin } from '@/config/api';
 import type { ILoginRequest } from '@/types/backend';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
@@ -41,11 +41,22 @@ const Login: React.FC = () => {
         errorOptions: {
           showDetails: import.meta.env.DEV
         },
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
           if (res && res.data && res.data.access_token) {
             localStorage.setItem('access_token', res.data.access_token);
             localStorage.setItem('refresh_token', res.data.refresh_token);
+
+            // Set initial user data from login response
             dispatch(setUserLoginInfo(res.data.user));
+
+            // Fetch complete user profile with RBAC data to ensure we have latest permissions
+            try {
+              await dispatch(fetchAccount()).unwrap();
+            } catch (profileError) {
+              console.warn('Failed to fetch complete user profile:', profileError);
+              // Continue with login even if profile fetch fails
+            }
+
             navigate('/dashboard');
           } else {
             showErrorMessage(new Error('Login response missing required data'));

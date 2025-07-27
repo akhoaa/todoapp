@@ -12,7 +12,14 @@ async function bootstrap() {
   // Enable CORS for frontend
   app.enableCors({
     origin: configService.isDevelopment
-      ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:4200']
+      ? [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        'http://localhost:4200'
+      ]
       : process.env.FRONTEND_URL?.split(',') || ['https://yourdomain.com'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],

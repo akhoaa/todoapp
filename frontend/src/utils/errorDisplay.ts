@@ -3,7 +3,7 @@
  * Provides user-friendly error display while maintaining performance
  */
 
-import { App } from 'antd';
+
 import { extractErrorDetails } from './errorHandler';
 import type { ErrorDetails } from './errorHandler';
 import { formatErrorForContext, createUserFriendlyError } from './errorFormatter';
@@ -71,7 +71,7 @@ export const displayErrorNotification = (
   notificationApi: any,
   options: { duration?: number; showDetails?: boolean } = {}
 ) => {
-  const { duration = 4.5, showDetails = false } = options;
+  const { duration = 4.5 } = options;
 
   // Format error for notification context
   const userFriendlyError = createUserFriendlyError(errorDetails);

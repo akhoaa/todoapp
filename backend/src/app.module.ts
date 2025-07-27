@@ -8,6 +8,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { TaskModule } from './task/task.module';
+import { ProjectModule } from './project/project.module';
+import { RbacModule } from './rbac/rbac.module';
 
 @Module({
   imports: [
@@ -26,9 +28,11 @@ import { TaskModule } from './task/task.module';
       limit: 100, // 100 requests per minute
     }]),
     PrismaModule,
+    RbacModule,
     UsersModule,
     AuthModule,
-    TaskModule
+    TaskModule,
+    ProjectModule
   ],
   controllers: [AppController],
   providers: [

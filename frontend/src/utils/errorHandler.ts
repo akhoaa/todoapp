@@ -146,5 +146,4 @@ export const getFastErrorMessage = (error: any): string => {
   return error?.message || error?.response?.data?.message || 'An error occurred';
 };
 
-// Explicit re-export of the ErrorDetails type for better module resolution
-export type { ErrorDetails };
+

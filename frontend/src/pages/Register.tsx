@@ -3,7 +3,7 @@ import { Button, Form, Input, Card, Typography, Divider, Row, Col } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { setUserLoginInfo } from '@/redux/slice/accountSlice';
+import { setUserLoginInfo, fetchAccount } from '@/redux/slice/accountSlice';
 import { callRegister } from '@/config/api';
 import type { IRegisterRequest } from '@/types/backend';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
@@ -20,7 +20,6 @@ const Register: React.FC = () => {
   const {
     handleApiResponse,
     showErrorNotification,
-    showSuccessMessage,
     getErrorDetails
   } = useErrorHandler({
     useNotification: true, // Use notifications for registration to show validation details
@@ -45,7 +44,7 @@ const Register: React.FC = () => {
     }
 
     // Use the enhanced error handler with automatic success/error display
-    const result = await handleApiResponse(
+    await handleApiResponse(
       () => callRegister(registerData),
       {
         successTitle: 'Registration Successful!',
@@ -54,11 +53,22 @@ const Register: React.FC = () => {
           useNotification: true, // Show detailed validation errors in notifications
           showDetails: import.meta.env.DEV
         },
-        onSuccess: (res) => {
+        onSuccess: async (res) => {
           if (res && res.data && res.data.access_token) {
             localStorage.setItem('access_token', res.data.access_token);
             localStorage.setItem('refresh_token', res.data.refresh_token);
+
+            // Set initial user data from registration response
             dispatch(setUserLoginInfo(res.data.user));
+
+            // Fetch complete user profile with RBAC data
+            try {
+              await dispatch(fetchAccount()).unwrap();
+            } catch (profileError) {
+              console.warn('Failed to fetch complete user profile:', profileError);
+              // Continue with registration even if profile fetch fails
+            }
+
             navigate('/dashboard');
           } else {
             showErrorNotification(new Error('Registration response missing required data'));

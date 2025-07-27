@@ -8,17 +8,21 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String?        @db.VarChar(255)
-  email         String         @unique @db.VarChar(255)
-  password      String         @db.VarChar(255)
-  avatar        String?        @db.VarChar(500)
-  roles         String         @default("user") @db.VarChar(50)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
-  tasks         Task[]
+  id             Int             @id @default(autoincrement())
+  name           String?         @db.VarChar(255)
+  email          String          @unique @db.VarChar(255)
+  password       String          @db.VarChar(255)
+  avatar         String?         @db.VarChar(500)
+  roles          String          @default("user") @db.VarChar(50)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  projectMembers ProjectMember[]
+  ownedProjects  Project[]       @relation("ProjectOwner")
+  refreshTokens  RefreshToken[]
+  tasks          Task[]
+  userRoles      UserRole[]
 
+  @@index([email, id, name, roles], map: "idx_users_email_covering")
   @@map("users")
 }
 
@@ -43,8 +47,103 @@ model Task {
   userId      Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  projectId   Int?
+  project     Project? @relation(fields: [projectId], references: [id])
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId], map: "tasks_userId_fkey")
+  @@index([projectId], map: "tasks_projectId_fkey")
+  @@index([userId, projectId], map: "idx_tasks_user_project")
   @@map("tasks")
+}
+
+model Role {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(50)
+  description     String?          @db.VarChar(255)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(100)
+  description     String?          @db.VarChar(255)
+  resource        String           @db.VarChar(50)
+  action          String           @db.VarChar(50)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model UserRole {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  roleId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@unique([userId, roleId], map: "idx_user_roles_user_role")
+  @@index([userId], map: "user_roles_userId_fkey")
+  @@index([roleId], map: "user_roles_roleId_fkey")
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@unique([roleId, permissionId], map: "idx_role_permissions_role_permission")
+  @@index([roleId], map: "role_permissions_roleId_fkey")
+  @@index([permissionId], map: "role_permissions_permissionId_fkey")
+  @@map("role_permissions")
+}
+
+model Project {
+  id          Int             @id @default(autoincrement())
+  name        String          @db.VarChar(255)
+  description String?         @db.Text
+  status      String          @default("ACTIVE") @db.VarChar(50)
+  ownerId     Int
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  members     ProjectMember[]
+  owner       User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@index([ownerId], map: "projects_ownerId_fkey")
+  @@index([ownerId, status], map: "idx_projects_owner_status")
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  userId    Int
+  role      String   @default("MEMBER") @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@unique([projectId, userId], map: "idx_project_members_project_user")
+  @@index([projectId], map: "project_members_projectId_fkey")
+  @@index([userId], map: "project_members_userId_fkey")
+  @@map("project_members")
 }

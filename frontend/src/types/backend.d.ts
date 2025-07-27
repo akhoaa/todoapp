@@ -16,7 +16,11 @@ export interface IUser {
   email: string;
   name?: string;
   avatar?: string;
-  roles: string;
+  roles: string; // Legacy role field
+  rbacRoles?: IRole[];
+  permissions?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface IGetAccount {
@@ -29,6 +33,7 @@ export interface ITask {
   description?: string;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
   userId: number;
+  projectId?: number;
   createdAt: string;
   updatedAt: string;
   user?: {
@@ -36,18 +41,26 @@ export interface ITask {
     name: string;
     email: string;
   };
+  project?: {
+    id: number;
+    name: string;
+    status: string;
+    ownerId?: number;
+  };
 }
 
 export interface ICreateTask {
   title: string;
   description?: string;
   status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  projectId?: number;
 }
 
 export interface IUpdateTask {
   title?: string;
   description?: string;
   status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+  projectId?: number;
 }
 
 export interface ILoginRequest {
@@ -79,4 +92,83 @@ export interface IModelPaginate<T> {
     total: number;
   };
   result: T[];
+}
+
+// RBAC Types
+export interface IRole {
+  id: number;
+  name: string;
+  description?: string;
+  permissions?: IPermission[];
+  assignedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface IPermission {
+  id: number;
+  name: string;
+  description?: string;
+  resource: string;
+  action: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface IAssignRoleRequest {
+  roleId: number;
+}
+
+// Project Management Types
+export interface IProject {
+  id: number;
+  name: string;
+  description?: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+  ownerId: number;
+  createdAt: string;
+  updatedAt: string;
+  owner?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  tasks?: ITask[];
+  members?: IProjectMember[];
+  _count?: {
+    tasks: number;
+    members: number;
+  };
+}
+
+export interface IProjectMember {
+  id: number;
+  userId: number;
+  projectId: number;
+  role: 'MEMBER' | 'MANAGER';
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+}
+
+export interface ICreateProject {
+  name: string;
+  description?: string;
+  status?: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+}
+
+export interface IUpdateProject {
+  name?: string;
+  description?: string;
+  status?: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+}
+
+export interface IAddProjectMember {
+  userId: number;
+  role?: 'MEMBER' | 'MANAGER';
 }

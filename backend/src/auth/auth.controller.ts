@@ -62,7 +62,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh token' })
   @ApiResponse({ status: 200, description: 'Return new access token if refresh token is valid.', type: RefreshResponseDto })
   @Post('refresh')
-  refresh(@Body() body: RefreshTokenDto): RefreshResponseDto {
+  refresh(@Body() body: RefreshTokenDto): Promise<RefreshResponseDto> {
     return this.authService.refreshToken(body.refreshToken);
   }
 }

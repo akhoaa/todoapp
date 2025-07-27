@@ -8,7 +8,13 @@ import type {
   IUpdateTask,
   IRegisterRequest,
   IChangePasswordRequest,
-  IUpdateProfileRequest
+  IUpdateProfileRequest,
+  IProject,
+  ICreateProject,
+  IUpdateProject,
+  IProjectMember,
+  IAddProjectMember,
+  IAssignRoleRequest
 } from '@/types/backend';
 import axios from './axios-customize';
 
@@ -38,6 +44,10 @@ export const callLogout = () => {
 /**
  * User Module
  */
+export const callGetUsers = () => {
+  return axios.get<IUser[]>('/users');
+}
+
 export const callGetProfile = () => {
   return axios.get<IBackendRes<IUser>>('/users/profile');
 }
@@ -72,4 +82,55 @@ export const callUpdateTask = (id: number, data: IUpdateTask) => {
 
 export const callDeleteTask = (id: number) => {
   return axios.delete(`/tasks/${id}`);
+}
+
+/**
+ * Project Module
+ */
+export const callGetProjects = () => {
+  return axios.get<IProject[]>('/projects');
+}
+
+export const callGetProjectById = (id: number) => {
+  return axios.get<IProject>(`/projects/${id}`);
+}
+
+export const callCreateProject = (data: ICreateProject) => {
+  return axios.post<IProject>('/projects', data);
+}
+
+export const callUpdateProject = (id: number, data: IUpdateProject) => {
+  return axios.put<IProject>(`/projects/${id}`, data);
+}
+
+export const callDeleteProject = (id: number) => {
+  return axios.delete(`/projects/${id}`);
+}
+
+// Project Members
+export const callGetProjectMembers = (projectId: number) => {
+  return axios.get<IProjectMember[]>(`/projects/${projectId}/members`);
+}
+
+export const callAddProjectMember = (projectId: number, data: IAddProjectMember) => {
+  return axios.post<IBackendRes<{ member: IProjectMember }>>(`/projects/${projectId}/members`, data);
+}
+
+export const callRemoveProjectMember = (projectId: number, memberId: number) => {
+  return axios.delete(`/projects/${projectId}/members/${memberId}`);
+}
+
+/**
+ * RBAC Module
+ */
+export const callGetUserRoles = (userId: number) => {
+  return axios.get(`/users/${userId}/roles`);
+}
+
+export const callAssignRole = (userId: number, data: IAssignRoleRequest) => {
+  return axios.post(`/users/${userId}/roles`, data);
+}
+
+export const callRemoveRole = (userId: number, roleId: number) => {
+  return axios.delete(`/users/${userId}/roles/${roleId}`);
 }

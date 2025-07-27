@@ -3,6 +3,7 @@ import { Injectable, UnauthorizedException, InternalServerErrorException, BadReq
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '../config/config.service';
+import { RbacService } from '../rbac/rbac.service';
 import * as bcrypt from 'bcryptjs';
 import { RegisterDto, AuthResponseDto, RefreshResponseDto, ForgotPasswordResponseDto } from './dto';
 
@@ -12,58 +13,105 @@ export class AuthService {
     private userService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private rbacService: RbacService,
   ) { }
 
   async login(email: string, password: string): Promise<AuthResponseDto> {
     try {
+      // Find user by email
       const user = await this.userService.findByEmail(email);
-      if (!user || !(await bcrypt.compare(password, user.password))) {
+      if (!user) {
         throw new UnauthorizedException('Invalid credentials');
       }
-      // Generate access token and refresh token
-      // Ensure user.roles exists, fallback to 'user' if not present
-      const payload = { sub: user.id, userId: user.id, roles: user.roles || 'user' };
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      // Get user roles and permissions for JWT payload
+      const userRoles = await this.rbacService.getUserRoles(user.id);
+      const userPermissions = await this.rbacService.getUserPermissions(user.id);
+
+      // Generate access token and refresh token with RBAC information
+      const payload = {
+        sub: user.id,
+        userId: user.id,
+        roles: user.roles || 'user', // Keep legacy role for backward compatibility
+        rbacRoles: userRoles,
+        permissions: userPermissions
+      };
+
       const access_token = this.jwtService.sign(payload);
       const refresh_token = this.jwtService.sign(payload, {
         secret: this.configService.jwt.refreshSecret,
         expiresIn: this.configService.jwt.refreshExpiresIn
       });
 
-      // User object already excludes password from validateUser()
-      return { access_token, refresh_token, user };
+      // Get user with RBAC data for login response
+      const userWithRbac = await this.userService.findOne(user.id);
+
+      return {
+        access_token,
+        refresh_token,
+        user: userWithRbac
+      };
     } catch (error) {
-      if (error instanceof UnauthorizedException) throw error;
-      throw new InternalServerErrorException('Error during login');
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error during login process');
     }
   }
 
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
     try {
-      const existing = await this.userService.findByEmail(dto.email);
-      if (existing) {
+      // Check if user already exists
+      const existingUser = await this.userService.findByEmail(dto.email);
+      if (existingUser) {
         throw new BadRequestException('Email already exists');
       }
 
+      // Create new user (UserService handles password hashing and validation)
       const user = await this.userService.create({
         email: dto.email,
-        password: dto.password, // Let UserService handle password hashing
+        password: dto.password,
         name: dto.name
       });
 
-      // Generate access token and refresh token
-      const payload = { sub: user.id, userId: user.id, roles: user.roles || 'user' };
+      // Get user roles and permissions for JWT payload (new users get default 'user' role)
+      const userRoles = await this.rbacService.getUserRoles(user.id);
+      const userPermissions = await this.rbacService.getUserPermissions(user.id);
+
+      // Generate access token and refresh token with RBAC information
+      const payload = {
+        sub: user.id,
+        userId: user.id,
+        roles: user.roles || 'user', // Keep legacy role for backward compatibility
+        rbacRoles: userRoles,
+        permissions: userPermissions
+      };
+
       const access_token = this.jwtService.sign(payload);
       const refresh_token = this.jwtService.sign(payload, {
         secret: this.configService.jwt.refreshSecret,
         expiresIn: this.configService.jwt.refreshExpiresIn
       });
 
-      // User object already excludes password from UsersService.create()
-      return { access_token, refresh_token, user };
+      // Get user with RBAC data for registration response
+      const userWithRbac = await this.userService.findOne(user.id);
+
+      return {
+        access_token,
+        refresh_token,
+        user: userWithRbac
+      };
     } catch (error) {
-      console.error('Registration error:', error);
-      if (error instanceof BadRequestException) throw error;
-      throw new InternalServerErrorException('Error during registration');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error during registration process');
     }
   }
 
@@ -71,33 +119,67 @@ export class AuthService {
     return { message: `If email ${email} exists, a reset link will be sent.` };
   }
 
-  refreshToken(refreshToken: string): RefreshResponseDto {
+  async refreshToken(refreshToken: string): Promise<RefreshResponseDto> {
     try {
+      // Verify refresh token
       const payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.jwt.refreshSecret
       });
-      // Additional validation could be added here (user existence, token revocation status)
-      const access_token = this.jwtService.sign({ sub: payload.sub, roles: payload.roles });
+
+      // Verify user still exists
+      const user = await this.userService.findOne(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('User no longer exists');
+      }
+
+      // Get fresh RBAC information for the user
+      const userRoles = await this.rbacService.getUserRoles(payload.sub);
+      const userPermissions = await this.rbacService.getUserPermissions(payload.sub);
+
+      // Generate new access token with updated RBAC information
+      const newPayload = {
+        sub: payload.sub,
+        userId: payload.sub,
+        roles: payload.roles, // Keep legacy role for backward compatibility
+        rbacRoles: userRoles,
+        permissions: userPermissions
+      };
+
+      const access_token = this.jwtService.sign(newPayload);
       return { access_token };
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userService.findByEmail(email);
-    if (user && await bcrypt.compare(password, user.password)) {
-      // Exclude password from response for security
-      const { password: userPassword, ...result } = user;
-      return result;
+    try {
+      const user = await this.userService.findByEmail(email);
+      if (user && await bcrypt.compare(password, user.password)) {
+        // Exclude password from response for security
+        const { password: userPassword, ...result } = user;
+        return result;
+      }
+      return null;
+    } catch (error) {
+      throw new InternalServerErrorException('Error validating user credentials');
     }
-    return null;
   }
 
   async validate(payload: any) {
-    return {
-      userId: payload.sub,  // Map sub to userId for application use
-      roles: payload.roles
-    };
+    try {
+      return {
+        id: payload.sub,      // Add id for RBAC service compatibility
+        userId: payload.sub,  // Map sub to userId for application use
+        roles: payload.roles, // Legacy role support
+        rbacRoles: payload.rbacRoles || [],
+        permissions: payload.permissions || []
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
   }
 }

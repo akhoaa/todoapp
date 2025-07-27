@@ -58,7 +58,12 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Dashboard from '@/pages/Dashboard';
 import Tasks from '@/pages/Tasks';
+import TaskForm from '@/pages/TaskForm';
 import Profile from '@/pages/Profile';
+import Projects from '@/pages/Projects';
+import ProjectDetail from '@/pages/ProjectDetail';
+import ProjectForm from '@/pages/ProjectForm';
+import Unauthorized from '@/pages/Unauthorized';
 
 // Styles
 import 'antd/dist/reset.css';
@@ -98,6 +103,7 @@ const AppContent = () => {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Protected routes */}
         <Route path="/" element={
@@ -108,7 +114,39 @@ const AppContent = () => {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
+          <Route path="tasks/new" element={
+            <ProtectedRoute permissions={['task:create']}>
+              <TaskForm />
+            </ProtectedRoute>
+          } />
+          <Route path="tasks/:id/edit" element={
+            <ProtectedRoute permissions={['task:update']}>
+              <TaskForm />
+            </ProtectedRoute>
+          } />
           <Route path="profile" element={<Profile />} />
+
+          {/* Project routes with permission checks */}
+          <Route path="projects" element={
+            <ProtectedRoute permissions={['project:read']}>
+              <Projects />
+            </ProtectedRoute>
+          } />
+          <Route path="projects/new" element={
+            <ProtectedRoute permissions={['project:create']}>
+              <ProjectForm />
+            </ProtectedRoute>
+          } />
+          <Route path="projects/:id" element={
+            <ProtectedRoute permissions={['project:read']}>
+              <ProjectDetail />
+            </ProtectedRoute>
+          } />
+          <Route path="projects/:id/edit" element={
+            <ProtectedRoute permissions={['project:update']}>
+              <ProjectForm />
+            </ProtectedRoute>
+          } />
         </Route>
 
         {/* Catch all route */}
