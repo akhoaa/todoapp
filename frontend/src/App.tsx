@@ -63,6 +63,9 @@ import Profile from '@/pages/Profile';
 import Projects from '@/pages/Projects';
 import ProjectDetail from '@/pages/ProjectDetail';
 import ProjectForm from '@/pages/ProjectForm';
+import Users from '@/pages/Users';
+import UserFormPage from '@/pages/UserFormPage';
+import UserDetail from '@/pages/UserDetail';
 import Unauthorized from '@/pages/Unauthorized';
 
 // Styles
@@ -145,6 +148,28 @@ const AppContent = () => {
           <Route path="projects/:id/edit" element={
             <ProtectedRoute permissions={['project:update']}>
               <ProjectForm />
+            </ProtectedRoute>
+          } />
+
+          {/* User Management routes with permission checks */}
+          <Route path="users" element={
+            <ProtectedRoute permissions={['user:read_all']}>
+              <Users />
+            </ProtectedRoute>
+          } />
+          <Route path="users/new" element={
+            <ProtectedRoute permissions={['user:create']}>
+              <UserFormPage />
+            </ProtectedRoute>
+          } />
+          <Route path="users/:id" element={
+            <ProtectedRoute permissions={['user:read_all']}>
+              <UserDetail />
+            </ProtectedRoute>
+          } />
+          <Route path="users/:id/edit" element={
+            <ProtectedRoute permissions={['user:update']}>
+              <UserFormPage />
             </ProtectedRoute>
           } />
         </Route>

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Layout, Menu, Button, Dropdown, Avatar, Space } from 'antd';
-import { UserOutlined, LogoutOutlined, SettingOutlined, HomeOutlined, CheckSquareOutlined, ProjectOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, SettingOutlined, HomeOutlined, CheckSquareOutlined, ProjectOutlined, TeamOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { setLogoutAction, fetchAccount } from '@/redux/slice/accountSlice';
@@ -65,6 +65,7 @@ const AppLayout: React.FC = () => {
 
   // Debug permission checking
   const hasProjectReadPermission = hasPermission('project:read');
+  const hasUserReadAllPermission = hasPermission('user:read_all');
 
   console.log('🔍 Layout Debug:', {
     isAuthenticated,
@@ -99,6 +100,13 @@ const AppLayout: React.FC = () => {
       icon: <ProjectOutlined />,
       label: 'Projects',
       onClick: () => navigate('/projects'),
+    }] : []),
+    // Only show Users if user has permission (Admin/Manager only)
+    ...(hasUserReadAllPermission ? [{
+      key: '/users',
+      icon: <TeamOutlined />,
+      label: 'Users',
+      onClick: () => navigate('/users'),
     }] : []),
   ];
 

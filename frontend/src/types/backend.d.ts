@@ -119,6 +119,17 @@ export interface IAssignRoleRequest {
   roleId: number;
 }
 
+export interface ICreateUserRequest {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface IUpdateUserRequest {
+  name?: string;
+  email?: string;
+}
+
 // Project Management Types
 export interface IProject {
   id: number;

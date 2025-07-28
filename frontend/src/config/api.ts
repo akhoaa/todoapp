@@ -60,6 +60,22 @@ export const callChangePassword = (data: IChangePasswordRequest) => {
   return axios.put<IBackendRes<string>>('/users/change-password', data);
 }
 
+export const callGetUserById = (id: number) => {
+  return axios.get<IBackendRes<IUser>>(`/users/${id}`);
+}
+
+export const callCreateUser = (data: IRegisterRequest) => {
+  return axios.post<IBackendRes<IUser>>('/users', data);
+}
+
+export const callUpdateUser = (id: number, data: IUpdateProfileRequest) => {
+  return axios.put<IBackendRes<IUser>>(`/users/${id}`, data);
+}
+
+export const callDeleteUser = (id: number) => {
+  return axios.delete<IBackendRes<string>>(`/users/${id}`);
+}
+
 /**
  * Task Module
  */
