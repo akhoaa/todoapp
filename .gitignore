@@ -48,3 +48,17 @@ node_modules/
 # Build outputs
 dist/
 build/
+
+# Test files
+*.test.*
+*.spec.*
+test/
+tests/
+__tests__/
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
