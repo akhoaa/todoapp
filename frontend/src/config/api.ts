@@ -100,6 +100,10 @@ export const callDeleteTask = (id: number) => {
   return axios.delete(`/tasks/${id}`);
 }
 
+export const callAssignTask = (id: number, userId: number) => {
+  return axios.put<ITask>(`/tasks/${id}/assign`, { userId });
+}
+
 /**
  * Project Module
  */

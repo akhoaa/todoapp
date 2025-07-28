@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Card,
   Button,
@@ -12,7 +13,8 @@ import {
   Popconfirm,
   Typography,
   Row,
-  Col
+  Col,
+  message
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,6 +27,7 @@ import {
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { fetchTasks, addTaskToList, updateTaskInList, removeTaskFromList } from '@/redux/slice/taskSlice';
 import { callCreateTask, callUpdateTask, callDeleteTask } from '@/config/api';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { ITask, ICreateTask, IUpdateTask } from '@/types/backend';
 import dayjs from 'dayjs';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
@@ -34,7 +37,9 @@ const { TextArea } = Input;
 
 const Tasks: React.FC = () => {
   const [form] = Form.useForm();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { hasPermission } = usePermissions();
   const { tasks, isLoading } = useAppSelector(state => state.task);
   const {
     handleApiResponse,
@@ -47,6 +52,7 @@ const Tasks: React.FC = () => {
   const [editingTask, setEditingTask] = useState<ITask | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [searchText, setSearchText] = useState<string>('');
 
   useEffect(() => {
     dispatch(fetchTasks(statusFilter || undefined));
@@ -69,6 +75,11 @@ const Tasks: React.FC = () => {
   };
 
   const handleDeleteTask = async (taskId: number) => {
+    if (!hasPermission('task:delete')) {
+      message.error('You do not have permission to delete tasks');
+      return;
+    }
+
     await handleApiResponse(
       () => callDeleteTask(taskId),
       {
@@ -175,18 +186,50 @@ const Tasks: React.FC = () => {
   const user = useAppSelector(state => state.account.user);
   const isAdmin = user?.roles === 'admin';
 
+  // Filter tasks based on search and status
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = !searchText ||
+      task.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      (task.description && task.description.toLowerCase().includes(searchText.toLowerCase()));
+
+    const matchesStatus = !statusFilter || task.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
   const columns = [
     {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (text: string) => <strong>{text}</strong>,
+      render: (text: string, record: ITask) => (
+        <span
+          style={{ fontWeight: 'bold', cursor: 'pointer', color: '#1890ff' }}
+          onClick={() => navigate(`/tasks/${record.id}`)}
+        >
+          {text}
+        </span>
+      ),
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
       render: (text: string) => text || '-',
+    },
+    {
+      title: 'Project',
+      dataIndex: 'project',
+      key: 'project',
+      render: (project: any) => project ? (
+        <Tag
+          color="blue"
+          style={{ cursor: 'pointer' }}
+          onClick={() => navigate(`/projects/${project.id}`)}
+        >
+          {project.name}
+        </Tag>
+      ) : '-',
     },
     ...(isAdmin ? [{
       title: 'Owner',
@@ -215,27 +258,31 @@ const Tasks: React.FC = () => {
       key: 'actions',
       render: (_: any, record: ITask) => (
         <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEditTask(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Are you sure you want to delete this task?"
-            onConfirm={() => handleDeleteTask(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
+          {hasPermission('task:update') && (
             <Button
               type="link"
-              danger
-              icon={<DeleteOutlined />}
+              icon={<EditOutlined />}
+              onClick={() => handleEditTask(record)}
             >
-              Delete
+              Edit
             </Button>
-          </Popconfirm>
+          )}
+          {hasPermission('task:delete') && (
+            <Popconfirm
+              title="Are you sure you want to delete this task?"
+              onConfirm={() => handleDeleteTask(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+              >
+                Delete
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -249,6 +296,14 @@ const Tasks: React.FC = () => {
         </Col>
         <Col>
           <Space>
+            <Input.Search
+              placeholder="Search tasks by title or description"
+              allowClear
+              style={{ width: 250 }}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onSearch={setSearchText}
+            />
             <Select
               placeholder="Filter by status"
               style={{ width: 150 }}
@@ -260,13 +315,15 @@ const Tasks: React.FC = () => {
               <Select.Option value="IN_PROGRESS">In Progress</Select.Option>
               <Select.Option value="COMPLETED">Completed</Select.Option>
             </Select>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreateTask}
-            >
-              New Task
-            </Button>
+            {hasPermission('task:create') && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreateTask}
+              >
+                New Task
+              </Button>
+            )}
           </Space>
         </Col>
       </Row>
@@ -274,7 +331,7 @@ const Tasks: React.FC = () => {
       <Card>
         <Table
           columns={columns}
-          dataSource={tasks}
+          dataSource={filteredTasks}
           rowKey="id"
           loading={isLoading}
           pagination={{

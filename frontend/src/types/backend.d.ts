@@ -63,6 +63,10 @@ export interface IUpdateTask {
   projectId?: number;
 }
 
+export interface IAssignTaskRequest {
+  userId: number;
+}
+
 export interface ILoginRequest {
   email: string;
   password: string;

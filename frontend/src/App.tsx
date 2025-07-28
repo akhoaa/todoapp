@@ -66,6 +66,7 @@ import ProjectForm from '@/pages/ProjectForm';
 import Users from '@/pages/Users';
 import UserFormPage from '@/pages/UserFormPage';
 import UserDetail from '@/pages/UserDetail';
+import TaskDetail from '@/pages/TaskDetail';
 import Unauthorized from '@/pages/Unauthorized';
 
 // Styles
@@ -116,10 +117,19 @@ const AppContent = () => {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="tasks" element={<Tasks />} />
+          <Route path="tasks" element={
+            <ProtectedRoute permissions={['task:read']}>
+              <Tasks />
+            </ProtectedRoute>
+          } />
           <Route path="tasks/new" element={
             <ProtectedRoute permissions={['task:create']}>
               <TaskForm />
+            </ProtectedRoute>
+          } />
+          <Route path="tasks/:id" element={
+            <ProtectedRoute permissions={['task:read']}>
+              <TaskDetail />
             </ProtectedRoute>
           } />
           <Route path="tasks/:id/edit" element={
