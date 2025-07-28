@@ -15,10 +15,11 @@ TodoApp has evolved from a simple task management tool into a sophisticated proj
 ## ✨ Key Features
 
 ### 🔐 Role-Based Access Control (RBAC)
-- **Three-tier role system**: Admin, Manager, User
-- **Granular permissions** for fine-grained access control
-- **Dynamic permission checking** on both frontend and backend
-- **Secure API endpoints** with permission-based guards
+- **Three-tier role hierarchy**: Admin (19 permissions) → Manager (15 permissions) → User (7 permissions)
+- **Granular permissions system** with 19 distinct permissions across resources
+- **Dynamic UI adaptation** based on user permissions and role capabilities
+- **Secure API endpoints** with comprehensive permission-based authorization guards
+- **Real-time permission validation** on both frontend components and backend services
 
 ### 📊 Project Management
 - **Complete project lifecycle** management (Create, Read, Update, Delete)
@@ -68,7 +69,102 @@ TodoApp has evolved from a simple task management tool into a sophisticated proj
 - **Code Quality**: ESLint, Prettier
 - **Production Build**: Optimized builds for both frontend and backend
 
-## 🚀 Getting Started
+## � Role-Based Access Control (RBAC) System
+
+### 📊 Role Hierarchy & Permissions
+
+TodoApp implements a comprehensive three-tier RBAC system with granular permissions:
+
+| Role | Permission Count | Key Capabilities | Access Level |
+|------|------------------|------------------|--------------|
+| **👑 Admin** | **19 permissions** | Complete system administration | Full Access |
+| **👔 Manager** | **15 permissions** | Project & team management | Limited Admin |
+| **👤 User** | **7 permissions** | Basic task & profile management | Restricted |
+
+### 🎯 Detailed Permission Matrix
+
+#### **👑 Admin Role (19 Permissions)**
+**Full system access with all administrative capabilities:**
+
+| Category | Permissions | Description |
+|----------|-------------|-------------|
+| **Task Management** | `task:create`, `task:read`, `task:update`, `task:delete`, `task:read_all` | Complete task CRUD operations |
+| **Project Management** | `project:create`, `project:read`, `project:update`, `project:delete`, `project:read_all`, `project:manage_members` | Full project lifecycle management |
+| **User Administration** | `user:create`, `user:read`, `user:update`, `user:delete`, `user:read_all`, `user:manage_roles` | Complete user management |
+| **Role Management** | `role:assign`, `role:remove` | System-wide role assignment capabilities |
+
+#### **👔 Manager Role (15 Permissions)**
+**Project and team management with restricted user administration:**
+
+| Category | Permissions | Description |
+|----------|-------------|-------------|
+| **Task Management** | `task:create`, `task:read`, `task:update`, `task:delete`, `task:read_all` | Complete task CRUD operations |
+| **Project Management** | `project:create`, `project:read`, `project:update`, `project:delete`, `project:read_all`, `project:manage_members` | Full project lifecycle management |
+| **Limited User Access** | `user:read`, `user:update`, `user:read_all`, `user:manage_roles` | View and edit users, view roles only |
+| **❌ Restricted** | ~~`user:create`~~, ~~`user:delete`~~, ~~`role:assign`~~, ~~`role:remove`~~ | Cannot create/delete users or assign roles |
+
+#### **👤 User Role (7 Permissions)**
+**Basic task management and profile access:**
+
+| Category | Permissions | Description |
+|----------|-------------|-------------|
+| **Task Management** | `task:create`, `task:read`, `task:update`, `task:delete` | Personal task CRUD operations |
+| **Project Viewing** | `project:read` | Read-only access to assigned projects |
+| **Profile Management** | `user:read`, `user:update` | View and update own profile |
+| **❌ Restricted** | ~~All admin/manager permissions~~ | No user management or project creation |
+
+### 🔑 Default User Accounts
+
+The system comes pre-configured with test accounts for each role:
+
+```bash
+# Admin Account (19 permissions - Full system access)
+Email: admin@example.com
+Password: admin123
+Capabilities: Complete system administration, user management, role assignment
+
+# Manager Account (15 permissions - Project/team management)
+Email: manager@example.com
+Password: manager123
+Capabilities: Project management, team collaboration, limited user access
+
+# Regular User Account (7 permissions - Basic access)
+Email: user@example.com
+Password: user123
+Capabilities: Task management, project viewing, profile management
+```
+
+### 🛡️ Security Implementation
+
+#### **Frontend Permission Guards**
+- **Dynamic UI Rendering**: Components show/hide based on user permissions
+- **Route Protection**: Unauthorized routes redirect to appropriate pages
+- **Button/Action Guards**: Administrative actions hidden for restricted users
+- **Real-time Validation**: Permission checks on every user interaction
+
+#### **Backend Authorization**
+- **JWT Token Integration**: Permissions embedded in authentication tokens
+- **API Endpoint Protection**: Every endpoint validates required permissions
+- **Database-level Security**: Role-based data access restrictions
+- **Middleware Guards**: Automatic permission validation on all requests
+
+#### **Permission Validation Examples**
+```typescript
+// Frontend Component Permission Check
+{hasPermission('user:create') && (
+  <Button onClick={handleCreateUser}>Create User</Button>
+)}
+
+// Backend API Endpoint Protection
+@UseGuards(JwtAuthGuard, PermissionGuard)
+@RequirePermissions('user:create')
+@Post()
+async createUser(@Body() dto: CreateUserDto) {
+  return this.usersService.create(dto);
+}
+```
+
+## �🚀 Getting Started
 
 ### Prerequisites
 
@@ -146,11 +242,11 @@ npx prisma db seed
 ```
 
 This will create:
-- Default admin user: `admin@example.com` / `admin123`
-- Default manager user: `manager@example.com` / `manager123`
-- Default regular user: `user@example.com` / `user123`
-- RBAC roles and permissions
-- Sample projects and tasks
+- **Admin user**: `admin@example.com` / `admin123` (19 permissions - Full system access)
+- **Manager user**: `manager@example.com` / `manager123` (15 permissions - Project/team management)
+- **Regular user**: `user@example.com` / `user123` (7 permissions - Basic task management)
+- **RBAC system**: 3 roles with 19 granular permissions
+- **Sample data**: Projects and tasks for testing functionality
 
 ### 🏃‍♂️ Running the Application
 
@@ -187,11 +283,21 @@ Access the complete Swagger/OpenAPI documentation at: **http://localhost:3000/ap
 - `POST /auth/forgot-password` - Request password reset
 
 #### 👥 User Management
-- `GET /users` - Get all users (Admin/Manager only)
+- `GET /users` - Get all users with roles and permissions (Admin/Manager only)
+- `POST /users` - Create new user account (Admin only)
+- `GET /users/:id` - Get specific user details (Admin/Manager only)
+- `PUT /users/:id` - Update user information (Admin/Manager only)
+- `DELETE /users/:id` - Delete user account (Admin only)
 - `GET /users/profile` - Get current user profile
 - `PUT /users/profile` - Update user profile
 - `PUT /users/change-password` - Change user password
-- `POST /users/:id/assign-role` - Assign role to user (Admin only)
+
+#### 🔐 Role & Permission Management
+- `GET /roles` - Get all available roles (Admin/Manager only)
+- `POST /users/:id/roles` - Assign role to user (Admin only)
+- `DELETE /users/:id/roles/:roleId` - Remove role from user (Admin only)
+- `GET /users/:id/permissions` - Get user's effective permissions
+- `GET /permissions` - Get all available permissions (Admin only)
 
 #### 📊 Project Management
 - `GET /projects` - Get user's projects
@@ -210,10 +316,25 @@ Access the complete Swagger/OpenAPI documentation at: **http://localhost:3000/ap
 - `PUT /tasks/:id` - Update task
 - `DELETE /tasks/:id` - Delete task
 
-### Permission Levels
-- **Admin**: Full system access
-- **Manager**: Project and team management
-- **User**: Personal tasks and assigned project tasks
+### 🎯 Permission-Based API Access
+
+#### **👑 Admin Access (19 Permissions)**
+- **Complete system control**: All endpoints accessible
+- **User administration**: Create, read, update, delete users
+- **Role management**: Assign and remove roles from users
+- **System-wide visibility**: Access to all projects, tasks, and users
+
+#### **👔 Manager Access (15 Permissions)**
+- **Project leadership**: Create, manage, and delete projects
+- **Team collaboration**: Add/remove project members
+- **Limited user access**: View and edit users, but cannot create/delete
+- **Task oversight**: Full task management across assigned projects
+
+#### **👤 User Access (7 Permissions)**
+- **Personal productivity**: Create and manage own tasks
+- **Project participation**: View assigned projects and contribute
+- **Profile management**: Update own profile and password
+- **Restricted scope**: No administrative or user management capabilities
 
 ## 📁 Project Structure
 
@@ -276,19 +397,31 @@ todoapp/
 - **Password Security**: bcrypt hashing with salt rounds
 - **Session Management**: Automatic token refresh and logout
 
-### 👥 User Roles & Permissions
-- **Admin Role**: Complete system administration
-  - User management and role assignment
-  - System-wide project and task access
-  - RBAC configuration and management
-- **Manager Role**: Team and project leadership
-  - Project creation and management
-  - Team member invitation and role assignment
-  - Cross-project task visibility
-- **User Role**: Individual contributor
-  - Personal task management
-  - Assigned project participation
-  - Profile management
+### 👥 RBAC Role Implementation
+
+#### **👑 Admin Role (19 Permissions)**
+**Complete system administration with unrestricted access:**
+- ✅ **User Management**: Create, read, update, delete users
+- ✅ **Role Assignment**: Assign and remove roles from any user
+- ✅ **System Configuration**: RBAC configuration and management
+- ✅ **Global Access**: System-wide project and task visibility
+- ✅ **Security Control**: Manage permissions and access levels
+
+#### **👔 Manager Role (15 Permissions)**
+**Project and team leadership with restricted administrative access:**
+- ✅ **Project Leadership**: Create, manage, and delete projects
+- ✅ **Team Building**: Add/remove project members and manage teams
+- ✅ **Task Oversight**: Full task management across managed projects
+- ✅ **User Viewing**: View and edit user profiles (no creation/deletion)
+- ❌ **Role Restrictions**: Cannot assign roles or create/delete users
+
+#### **👤 User Role (7 Permissions)**
+**Individual contributor with basic productivity features:**
+- ✅ **Personal Productivity**: Create and manage personal tasks
+- ✅ **Project Participation**: View and contribute to assigned projects
+- ✅ **Profile Control**: Update own profile and account settings
+- ❌ **Administrative Restrictions**: No user management or project creation
+- ❌ **Limited Scope**: Access only to assigned projects and personal tasks
 
 ### 📊 Project Management Workflow
 1. **Project Creation**: Managers create projects with descriptions and status
@@ -369,6 +502,76 @@ npx prisma migrate dev --name your_migration_name
 - **Frontend**: React DevTools and Redux DevTools support
 - **Database**: Prisma Studio for visual database management
 
+### 🔧 RBAC Troubleshooting
+
+#### **Common Issues & Solutions**
+
+**🚨 User Cannot Login After Creation**
+```bash
+# Problem: Admin-created users may not have proper RBAC roles assigned
+# Solution: Verify user has roles assigned in database
+npx prisma studio
+# Check userRoles table for the user ID
+
+# Or assign role via API:
+curl -X POST http://localhost:3000/users/{userId}/roles \
+  -H "Authorization: Bearer {admin-token}" \
+  -d '{"roleId": 3}' # 3 = user role
+```
+
+**🚨 Permission Denied Errors**
+```bash
+# Problem: User lacks required permissions for action
+# Solution: Check user's effective permissions
+curl -X GET http://localhost:3000/users/{userId}/permissions \
+  -H "Authorization: Bearer {token}"
+
+# Verify role assignments:
+curl -X GET http://localhost:3000/users/{userId} \
+  -H "Authorization: Bearer {admin-token}"
+```
+
+**🚨 UI Elements Not Showing/Hiding Correctly**
+```typescript
+// Problem: Frontend permission checks not working
+// Solution: Verify usePermissions hook implementation
+const { hasPermission } = usePermissions();
+console.log('User permissions:', hasPermission('user:create'));
+
+// Check JWT token contains permissions:
+// Decode token at jwt.io and verify 'permissions' array
+```
+
+**🚨 Database Seeding Issues**
+```bash
+# Problem: RBAC roles/permissions not created properly
+# Solution: Reset and re-seed database
+npx prisma migrate reset --force
+npx prisma db seed
+
+# Verify seed data:
+npx prisma studio
+# Check: roles, permissions, rolePermissions, userRoles tables
+```
+
+#### **Permission Verification Commands**
+```bash
+# Test admin login and permissions
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"admin123"}'
+
+# Test manager login and permissions
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"manager@example.com","password":"manager123"}'
+
+# Test user login and permissions
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"user123"}'
+```
+
 ## 🤝 Contributing
 
 We welcome contributions to improve TodoApp! Here's how you can help:
@@ -419,52 +622,4 @@ If you encounter any issues or have questions:
 
 ---
 
-**Built with ❤️ using modern web technologies for enterprise-grade project management.**
-
-### Task Management
-- Create, read, update, delete tasks
-- Task status management (Pending, In Progress, Completed)
-- Filter tasks by status
-- User-specific task isolation
-
-### UI/UX
-- Responsive design
-- Modern and clean interface
-- Loading states and error handling
-- Form validation
-- Dashboard with statistics
-
-## Environment Configuration
-
-### Backend
-The backend uses environment variables. Default configuration works out of the box.
-
-### Frontend
-Create a `.env` file in the frontend directory:
-```
-VITE_BACKEND_URL=http://localhost:3000
-VITE_API_PREFIX=api
-```
-
-## Development Notes
-
-- The backend uses SQLite database (file-based, no setup required)
-- CORS is configured to allow frontend requests
-- JWT tokens are stored in localStorage
-- The application uses TypeScript throughout for type safety
-- Redux Toolkit is used for efficient state management
-- Ant Design provides a consistent and professional UI
-
-## Building for Production
-
-### Backend
-```bash
-cd backend && npm run build
-```
-
-### Frontend
-```bash
-cd frontend && npm run build
-```
-
-The built frontend files will be in the `frontend/dist` directory and can be served by any static file server.
+**Built with ❤️ using modern web technologies for enterprise-grade project management with comprehensive RBAC security.**

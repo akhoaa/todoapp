@@ -127,6 +127,21 @@ export class UsersService {
         },
       });
 
+      // Assign default RBAC role to the new user
+      const defaultRoleName = dto.roles || 'user';
+      const defaultRole = await this.prisma.role.findUnique({
+        where: { name: defaultRoleName }
+      });
+
+      if (defaultRole) {
+        await this.prisma.userRole.create({
+          data: {
+            userId: user.id,
+            roleId: defaultRole.id,
+          },
+        });
+      }
+
       return user;
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -416,7 +431,15 @@ export class UsersService {
           roles: true,
           userRoles: {
             include: {
-              role: true,
+              role: {
+                include: {
+                  rolePermissions: {
+                    include: {
+                      permission: true,
+                    },
+                  },
+                },
+              },
             },
           },
           createdAt: true,
@@ -424,10 +447,25 @@ export class UsersService {
         },
       });
 
-      return users.map(user => ({
-        ...user,
-        rbacRoles: user.userRoles.map(ur => ur.role),
-      }));
+      return users.map(user => {
+        // Extract RBAC roles
+        const rbacRoles = user.userRoles.map(ur => ur.role);
+
+        // Extract all permissions from all roles
+        const permissions = user.userRoles.reduce((allPermissions, userRole) => {
+          const rolePermissions = userRole.role.rolePermissions.map(rp => rp.permission.name);
+          return [...allPermissions, ...rolePermissions];
+        }, []);
+
+        // Remove duplicate permissions
+        const uniquePermissions = [...new Set(permissions)];
+
+        return {
+          ...user,
+          rbacRoles,
+          permissions: uniquePermissions,
+        };
+      });
     } catch (error) {
       throw new InternalServerErrorException('Error fetching users with roles');
     }

@@ -4,6 +4,7 @@ import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import type { IUser } from '@/types/backend';
 import { useAppDispatch } from '@/redux/hooks';
 import { assignUserRole, removeUserRole, fetchUsers } from '@/redux/slice/userSlice';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -27,8 +28,13 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
   onClose,
 }) => {
   const dispatch = useAppDispatch();
+  const { hasPermission } = usePermissions();
   const [selectedRoleId, setSelectedRoleId] = useState<number | undefined>();
   const [loading, setLoading] = useState(false);
+
+  // Check if user can actually assign/remove roles
+  const canAssignRoles = hasPermission('role:assign');
+  const canRemoveRoles = hasPermission('role:remove');
 
   useEffect(() => {
     if (visible) {
@@ -122,20 +128,22 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
                   <Tag
                     key={role.id}
                     color={getRoleColor(role.name)}
-                    closable
-                    onClose={() => handleRemoveRole(role.id)}
+                    closable={canRemoveRoles}
+                    onClose={canRemoveRoles ? () => handleRemoveRole(role.id) : undefined}
                     style={{ marginBottom: 8 }}
                   >
                     <Space>
                       {role.name}
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<MinusOutlined />}
-                        onClick={() => handleRemoveRole(role.id)}
-                        loading={loading}
-                        style={{ padding: 0, minWidth: 'auto' }}
-                      />
+                      {canRemoveRoles && (
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<MinusOutlined />}
+                          onClick={() => handleRemoveRole(role.id)}
+                          loading={loading}
+                          style={{ padding: 0, minWidth: 'auto' }}
+                        />
+                      )}
                     </Space>
                   </Tag>
                 ))}
@@ -153,47 +161,59 @@ const RoleSelector: React.FC<RoleSelectorProps> = ({
           <Divider />
 
           {/* Assign New Role Section */}
-          <div>
-            <Title level={5}>Assign New Role</Title>
-            {availableRoles.length > 0 ? (
-              <Space.Compact style={{ width: '100%' }}>
-                <Select
-                  placeholder="Select a role to assign"
-                  value={selectedRoleId}
-                  onChange={setSelectedRoleId}
-                  style={{ flex: 1 }}
-                  disabled={loading}
-                >
-                  {availableRoles.map(role => (
-                    <Option key={role.id} value={role.id}>
-                      <Space>
-                        <Tag color={getRoleColor(role.name)} style={{ margin: 0 }}>
-                          {role.name}
-                        </Tag>
-                        <Text type="secondary">{role.description}</Text>
-                      </Space>
-                    </Option>
-                  ))}
-                </Select>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAssignRole}
-                  disabled={!selectedRoleId}
-                  loading={loading}
-                >
-                  Assign
-                </Button>
-              </Space.Compact>
-            ) : (
+          {canAssignRoles ? (
+            <div>
+              <Title level={5}>Assign New Role</Title>
+              {availableRoles.length > 0 ? (
+                <Space.Compact style={{ width: '100%' }}>
+                  <Select
+                    placeholder="Select a role to assign"
+                    value={selectedRoleId}
+                    onChange={setSelectedRoleId}
+                    style={{ flex: 1 }}
+                    disabled={loading}
+                  >
+                    {availableRoles.map(role => (
+                      <Option key={role.id} value={role.id}>
+                        <Space>
+                          <Tag color={getRoleColor(role.name)} style={{ margin: 0 }}>
+                            {role.name}
+                          </Tag>
+                          <Text type="secondary">{role.description}</Text>
+                        </Space>
+                      </Option>
+                    ))}
+                  </Select>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleAssignRole}
+                    disabled={!selectedRoleId}
+                    loading={loading}
+                  >
+                    Assign
+                  </Button>
+                </Space.Compact>
+              ) : (
+                <Alert
+                  message="All roles assigned"
+                  description="This user has been assigned all available roles."
+                  type="success"
+                  showIcon
+                />
+              )}
+            </div>
+          ) : (
+            <div>
+              <Title level={5}>Role Management</Title>
               <Alert
-                message="All roles assigned"
-                description="This user has been assigned all available roles."
-                type="success"
+                message="View Only Access"
+                description="You have permission to view user roles but cannot assign or remove roles."
+                type="info"
                 showIcon
               />
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Role Descriptions */}
           <div style={{ marginTop: 24 }}>

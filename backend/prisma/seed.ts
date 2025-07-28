@@ -55,10 +55,16 @@ async function main() {
     { name: 'project:manage_members', resource: 'project', action: 'manage_members', description: 'Manage project members' },
 
     // User permissions
+    { name: 'user:create', resource: 'user', action: 'create', description: 'Create new users' },
     { name: 'user:read', resource: 'user', action: 'read', description: 'Read user profiles' },
     { name: 'user:update', resource: 'user', action: 'update', description: 'Update user profiles' },
+    { name: 'user:delete', resource: 'user', action: 'delete', description: 'Delete users' },
     { name: 'user:read_all', resource: 'user', action: 'read_all', description: 'Read all users' },
     { name: 'user:manage_roles', resource: 'user', action: 'manage_roles', description: 'Manage user roles' },
+
+    // Role permissions
+    { name: 'role:assign', resource: 'role', action: 'assign', description: 'Assign roles to users' },
+    { name: 'role:remove', resource: 'role', action: 'remove', description: 'Remove roles from users' },
   ];
 
   const createdPermissions: any[] = [];
@@ -89,12 +95,18 @@ async function main() {
     });
   }
 
-  // Manager gets project and task management permissions
+  // Manager gets project and task management permissions, limited user permissions
   const managerPermissions = createdPermissions.filter(p =>
+    // All project management permissions
     p.name.includes('project:') ||
+    // All task management permissions
     p.name.includes('task:') ||
+    // Limited user permissions (no create, delete, or role management)
     p.name === 'user:read' ||
-    p.name === 'user:read_all'
+    p.name === 'user:read_all' ||
+    p.name === 'user:update' ||
+    p.name === 'user:manage_roles' // Keep for viewing roles, but restrict actual assignment
+    // Explicitly exclude: user:create, user:delete, role:assign, role:remove
   );
   for (const permission of managerPermissions) {
     await prisma.rolePermission.upsert({

@@ -153,7 +153,7 @@ const UserDetail: React.FC = () => {
                 Edit User
               </Button>
             )}
-            {hasPermission('role:assign') && (
+            {(hasPermission('role:assign') || hasPermission('user:manage_roles')) && (
               <Button
                 icon={<SettingOutlined />}
                 onClick={handleManageRoles}

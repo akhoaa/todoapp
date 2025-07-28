@@ -130,7 +130,7 @@ const UserTable: React.FC<UserTableProps> = ({
             </Tooltip>
           )}
 
-          {hasPermission('role:assign') && (
+          {(hasPermission('role:assign') || hasPermission('user:manage_roles')) && (
             <Tooltip title="Manage Roles">
               <Button
                 type="text"
