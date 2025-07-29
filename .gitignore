@@ -62,3 +62,13 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Analysis and testing scripts
+analyze-*.js
+*-analysis-results.json
+rbac-analysis-results.json
+
+# Package files at root (for temporary scripts)
+/package.json
+/package-lock.json
+/node_modules
