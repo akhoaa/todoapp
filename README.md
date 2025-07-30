@@ -48,26 +48,30 @@ TodoApp has evolved from a simple task management tool into a sophisticated proj
 ## 🛠️ Technology Stack
 
 ### Backend
-- **Framework**: NestJS (Node.js framework with TypeScript)
-- **Database**: MySQL with Prisma ORM
-- **Authentication**: JWT with Passport.js
-- **Validation**: class-validator with comprehensive DTO validation
-- **Documentation**: Swagger/OpenAPI
-- **Security**: bcrypt, CORS, helmet
+- **Framework**: NestJS (Node.js, TypeScript)
+- **Database**: MySQL (Prisma ORM)
+- **Authentication**: JWT (Passport.js, refresh token)
+- **Validation**: class-validator, Joi (DTO validation)
+- **Documentation**: Swagger/OpenAPI (`/api`)
+- **Security**: bcryptjs, CORS, helmet
+- **RBAC**: Dynamic permission system, permission checks in both controller and service
+- **Prisma Models**: users, roles, permissions, userRoles, projects, tasks, projectMembers, refreshTokens
+- **Scripts**: `start`, `start:dev`, `start:prod`, `start:debug`, `build`, `lint`, `format`, `prisma generate`, `prisma migrate`, `prisma db seed`
 
 ### Frontend
-- **Framework**: React 18 with TypeScript
-- **State Management**: Redux Toolkit with RTK Query
-- **Routing**: React Router v6 with protected routes
-- **HTTP Client**: Axios with interceptors
-- **UI Components**: Custom components with modern CSS
-- **Build Tool**: Vite for fast development and building
+- **Framework**: React 19, TypeScript
+- **State Management**: Redux Toolkit, RTK Query
+- **Routing**: React Router v7 (protected routes)
+- **UI Components**: Ant Design 5, custom components
+- **HTTP Client**: Axios (interceptors, error handling)
+- **Build Tool**: Vite
+- **Scripts**: `dev`, `build`, `lint`, `preview`
 
 ### DevOps & Production
-- **Database Migrations**: Prisma migrate
+- **Database Migrations**: Prisma migrate, seed, reset
 - **Environment Management**: dotenv
-- **Code Quality**: ESLint, Prettier
-- **Production Build**: Optimized builds for both frontend and backend
+- **Code Quality**: ESLint, Prettier, TypeScript strict
+- **Production Build**: Optimized frontend/backend, clear scripts
 
 ## � Role-Based Access Control (RBAC) System
 
@@ -280,7 +284,6 @@ Access the complete Swagger/OpenAPI documentation at: **http://localhost:3000/ap
 - `POST /auth/register` - Register a new user
 - `POST /auth/login` - User login with email/password
 - `POST /auth/refresh` - Refresh access token
-- `POST /auth/forgot-password` - Request password reset
 
 #### 👥 User Management
 - `GET /users` - Get all users with roles and permissions (Admin/Manager only)
@@ -290,7 +293,6 @@ Access the complete Swagger/OpenAPI documentation at: **http://localhost:3000/ap
 - `DELETE /users/:id` - Delete user account (Admin only)
 - `GET /users/profile` - Get current user profile
 - `PUT /users/profile` - Update user profile
-- `PUT /users/change-password` - Change user password
 
 #### 🔐 Role & Permission Management
 - `GET /roles` - Get all available roles (Admin/Manager only)
@@ -336,55 +338,36 @@ Access the complete Swagger/OpenAPI documentation at: **http://localhost:3000/ap
 - **Profile management**: Update own profile and password
 - **Restricted scope**: No administrative or user management capabilities
 
+todoapp/
 ## 📁 Project Structure
 
 ```
 todoapp/
-├── backend/                    # NestJS Backend Application
+├── backend/                    # NestJS Backend
 │   ├── src/
-│   │   ├── auth/              # Authentication & JWT management
-│   │   │   ├── dto/           # Data Transfer Objects
-│   │   │   ├── strategies/    # Passport strategies
-│   │   │   └── guards/        # Auth guards
-│   │   ├── users/             # User management module
-│   │   │   ├── dto/           # User DTOs with validation
-│   │   │   └── entities/      # User entity definitions
-│   │   ├── task/              # Task management module
-│   │   │   ├── dto/           # Task DTOs
-│   │   │   └── entities/      # Task entities
-│   │   ├── project/           # Project management module
-│   │   │   ├── dto/           # Project DTOs
-│   │   │   └── entities/      # Project entities
-│   │   ├── rbac/              # Role-Based Access Control
-│   │   │   └── entities/      # Role & Permission entities
-│   │   ├── common/            # Shared utilities
-│   │   │   ├── decorators/    # Custom decorators
-│   │   │   ├── guards/        # Permission guards
-│   │   │   └── dto/           # Common DTOs
-│   │   ├── config/            # Configuration management
-│   │   └── prisma/            # Prisma service
+│   │   ├── app.*               # App bootstrap
+│   │   ├── auth/               # Authentication, JWT, refresh token, Passport strategies
+│   │   ├── users/              # User management, DTO, entities
+│   │   ├── task/               # Task management, DTO, entities
+│   │   ├── project/            # Project management, DTO, entities
+│   │   ├── rbac/               # Role, permission, entities
+│   │   ├── common/             # Decorators, guards, filters, shared DTOs
+│   │   ├── config/             # Configuration, env, validation
+│   │   ├── prisma/             # Prisma service
 │   ├── prisma/
-│   │   ├── schema.prisma      # Database schema
-│   │   ├── migrations/        # Database migrations
-│   │   └── seed.ts           # Database seeding
+│   │   ├── schema.prisma       # Database schema
+│   │   ├── migrations/         # Database migrations
+│   │   └── seed.ts             # Seed sample data
 │   └── package.json
-├── frontend/                   # React Frontend Application
+├── frontend/                   # React Frontend
 │   ├── src/
-│   │   ├── components/        # Reusable UI components
-│   │   │   ├── Layout.tsx     # Main layout component
-│   │   │   └── PermissionGuard.tsx # Permission-based rendering
-│   │   ├── pages/             # Page components
-│   │   │   ├── Login.tsx      # Authentication pages
-│   │   │   ├── Projects.tsx   # Project management
-│   │   │   ├── Tasks.tsx      # Task management
-│   │   │   └── Profile.tsx    # User profile
-│   │   ├── redux/             # State management
-│   │   │   ├── store.ts       # Redux store configuration
-│   │   │   └── slice/         # Redux slices
-│   │   ├── hooks/             # Custom React hooks
-│   │   ├── config/            # API configuration
-│   │   ├── types/             # TypeScript definitions
-│   │   └── utils/             # Utility functions
+│   │   ├── components/         # UI components, PermissionGuard, Layout
+│   │   ├── pages/              # Pages: Login, Projects, Tasks, Profile, ...
+│   │   ├── redux/              # Store, slice, hooks
+│   │   ├── hooks/              # Custom hooks
+│   │   ├── config/             # API config, axios
+│   │   ├── types/              # TypeScript types
+│   │   └── utils/              # Helper, error handler
 │   └── package.json
 └── README.md
 ```
@@ -400,28 +383,27 @@ todoapp/
 ### 👥 RBAC Role Implementation
 
 #### **👑 Admin Role (19 Permissions)**
-**Complete system administration with unrestricted access:**
-- ✅ **User Management**: Create, read, update, delete users
-- ✅ **Role Assignment**: Assign and remove roles from any user
-- ✅ **System Configuration**: RBAC configuration and management
-- ✅ **Global Access**: System-wide project and task visibility
-- ✅ **Security Control**: Manage permissions and access levels
+**Full system administration, unrestricted:**
+- ✅ User management: create, view, update, delete users
+- ✅ Assign/remove roles for users
+- ✅ RBAC management: create permissions, assign permissions to roles
+- ✅ Manage all projects and tasks in the system
+- ✅ Access all data and system configuration
 
 #### **👔 Manager Role (15 Permissions)**
-**Project and team leadership with restricted administrative access:**
-- ✅ **Project Leadership**: Create, manage, and delete projects
-- ✅ **Team Building**: Add/remove project members and manage teams
-- ✅ **Task Oversight**: Full task management across managed projects
-- ✅ **User Viewing**: View and edit user profiles (no creation/deletion)
-- ❌ **Role Restrictions**: Cannot assign roles or create/delete users
+**Project and team management, no admin rights:**
+- ✅ Create, update, delete, view projects
+- ✅ Add/remove project members
+- ✅ Manage tasks in projects they manage
+- ✅ View/update user info (cannot create/delete users)
+- ❌ Cannot assign/remove roles, cannot create/delete users
 
 #### **👤 User Role (7 Permissions)**
-**Individual contributor with basic productivity features:**
-- ✅ **Personal Productivity**: Create and manage personal tasks
-- ✅ **Project Participation**: View and contribute to assigned projects
-- ✅ **Profile Control**: Update own profile and account settings
-- ❌ **Administrative Restrictions**: No user management or project creation
-- ❌ **Limited Scope**: Access only to assigned projects and personal tasks
+**Basic user, personal actions only:**
+- ✅ Create, view, update, delete own tasks
+- ✅ View assigned projects
+- ✅ View/update own profile
+- ❌ No user management, cannot create projects
 
 ### 📊 Project Management Workflow
 1. **Project Creation**: Managers create projects with descriptions and status
@@ -431,10 +413,10 @@ todoapp/
 5. **Collaboration**: Team members collaborate on shared objectives
 
 ### ✅ Advanced Task Features
-- **Smart Assignment**: Tasks automatically linked to projects
-- **Status Workflow**: Pending → In Progress → Completed
-- **Ownership Tracking**: Clear task ownership and responsibility
-- **Project Context**: Tasks organized within project structure
+- **Task-project association**: Tasks are always linked to a project
+- **Status workflow**: Pending → In Progress → Completed
+- **Ownership tracking**: Track task ownership
+- **Project context**: Tasks are organized within project structure
 
 ## 🚀 Production Deployment
 
@@ -485,6 +467,7 @@ npx prisma db seed
 - **TypeScript**: Type safety across the entire stack
 - **Validation**: Comprehensive input validation with class-validator
 
+npx prisma migrate reset
 ### Database Management
 ```bash
 # View database in browser
@@ -551,7 +534,7 @@ npx prisma db seed
 
 # Verify seed data:
 npx prisma studio
-# Check: roles, permissions, rolePermissions, userRoles tables
+# Check: roles, permissions, rolePermissions, userRoles, projects, tasks, projectMembers, refreshTokens
 ```
 
 #### **Permission Verification Commands**

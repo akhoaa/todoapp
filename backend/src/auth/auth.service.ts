@@ -6,6 +6,7 @@ import { ConfigService } from '../config/config.service';
 import { RbacService } from '../rbac/rbac.service';
 import * as bcrypt from 'bcryptjs';
 import { RegisterDto, AuthResponseDto, RefreshResponseDto, ForgotPasswordResponseDto } from './dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -115,8 +116,21 @@ export class AuthService {
     }
   }
 
-  forgotPassword(email: string): ForgotPasswordResponseDto {
-    return { message: `If email ${email} exists, a reset link will be sent.` };
+
+  /**
+   * Reset password using token and new password
+   * This is a simplified version. In production, you should verify the token, check expiry, etc.
+   */
+  async resetPassword(dto: ResetPasswordDto) {
+    // TODO: Verify token, find user by token, check expiry, etc.
+    // For demo, assume token is user's email (replace with real token logic)
+    const user = await this.userService.findByEmail(dto.token);
+    if (!user) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    await this.userService.update(user.id, { password: dto.newPassword });
+    return { message: 'Password reset successful.' };
   }
 
   async refreshToken(refreshToken: string): Promise<RefreshResponseDto> {

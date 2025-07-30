@@ -3,7 +3,6 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam } from '@ne
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -51,13 +50,6 @@ export class UsersController {
     return this.usersService.update(userId, dto);
   }
 
-  @ApiOperation({ summary: 'Change password' })
-  @ApiResponse({ status: 200, description: 'Password changed successfully.' })
-  @Roles('user', 'admin')
-  @Put('change-password')
-  changePassword(@CurrentUser('userId') userId: number, @Body() dto: ChangePasswordDto) {
-    return this.usersService.changePassword(userId, dto);
-  }
 
   @ApiOperation({ summary: 'Get user by id (admin only)' })
   @ApiResponse({ status: 200, description: 'User detail.' })

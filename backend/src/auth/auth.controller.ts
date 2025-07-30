@@ -4,14 +4,13 @@ import { AuthService } from './auth.service';
 import {
   RegisterDto,
   LoginDto,
-  ForgotPasswordDto,
   RefreshTokenDto,
   AuthResponseDto,
   RefreshResponseDto,
-  ForgotPasswordResponseDto,
   LogoutResponseDto,
   UserResponseDto
 } from './dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/user.decorator';
 
@@ -52,11 +51,12 @@ export class AuthController {
     return { message: 'Logout successful. Please remove the token from client storage.' };
   }
 
-  @ApiOperation({ summary: 'Forgot password' })
-  @ApiResponse({ status: 200, description: 'If email exists, send reset link.', type: ForgotPasswordResponseDto })
-  @Post('forgot-password')
-  forgotPassword(@Body() body: ForgotPasswordDto): ForgotPasswordResponseDto {
-    return this.authService.forgotPassword(body.email);
+
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiResponse({ status: 200, description: 'Password reset successful.' })
+  @Post('reset-password')
+  async resetPassword(@Body() body: ResetPasswordDto) {
+    return this.authService.resetPassword(body);
   }
 
   @ApiOperation({ summary: 'Refresh token' })

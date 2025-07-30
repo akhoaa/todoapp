@@ -2,7 +2,6 @@ import { Injectable, InternalServerErrorException, BadRequestException, NotFound
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import * as bcrypt from 'bcryptjs';
 
@@ -261,49 +260,6 @@ export class UsersService {
     }
   }
 
-  async changePassword(userId: number, dto: ChangePasswordDto) {
-    try {
-      // Fetch user with password for verification
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, password: true }
-      });
-
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      // Verify current password matches
-      const isCurrentPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
-      if (!isCurrentPasswordValid) {
-        throw new UnauthorizedException('Current password is incorrect');
-      }
-
-      // Prevent setting the same password
-      const isSamePassword = await bcrypt.compare(dto.newPassword, user.password);
-      if (isSamePassword) {
-        throw new BadRequestException('New password must be different from current password');
-      }
-
-      // Hash new password securely
-      const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
-
-      // Update password in database
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { password: hashedNewPassword },
-      });
-
-      return { message: 'Password changed successfully' };
-    } catch (error) {
-      if (error instanceof NotFoundException ||
-        error instanceof UnauthorizedException ||
-        error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Error changing password');
-    }
-  }
 
   // RBAC Methods
   async assignRole(userId: number, dto: AssignRoleDto) {
